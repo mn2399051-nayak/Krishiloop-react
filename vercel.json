@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd krishiloop-react/krishiloop-react && npm install && npm run build",
+  "outputDirectory": "krishiloop-react/krishiloop-react/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
