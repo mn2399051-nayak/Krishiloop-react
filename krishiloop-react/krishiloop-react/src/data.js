@@ -83,3 +83,20 @@ export const route = {
 export function score(factorSet) {
   return Object.keys(weights).reduce((sum, k) => sum + weights[k] * factorSet[k], 0);
 }
+
+// Lat/Lon lookup for the pilot villages. Used by kmBetween() and the Google
+// map so they stay aligned. Coordinates are illustrative for the demo.
+export const VILLAGE_COORDS = {
+  Sangrur: [30.24, 75.84],
+  Dhuri: [30.37, 75.87],
+  Sunam: [30.13, 75.8],
+  Longowal: [30.21, 75.68],
+  Bhawanigarh: [30.27, 76.04],
+  Lehragaga: [29.93, 75.8],
+  Malerkotla: [30.53, 75.88],
+  Patiala: [30.34, 76.39],
+  Barnala: [30.38, 75.55],
+};
+
+// Processor / depot anchor used by the route map. Defaults to Sangrur.
+export const DEFAULT_DEPOT = { name: "Sangrur Biomass Pellets", lat: VILLAGE_COORDS.Sangrur[0], lng: VILLAGE_COORDS.Sangrur[1] };
