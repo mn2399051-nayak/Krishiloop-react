@@ -1,67 +1,131 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { DEMO_ACCOUNTS } from "../accounts.js";
 
-const activityData = [
-  { type: "green", icon: "✓", text: 'Added <b>L-106</b> lot for Sukhdev Singh (7.4 t, Malerkotla)', time: "Today, 9:14 AM" },
-  { type: "straw", icon: "📈", text: 'Updated collection route for <b>Sangrur cluster</b> — added stop at Lehragaga', time: "Yesterday, 4:32 PM" },
-  { type: "blue", icon: "🔔", text: 'Matched <b>L-104</b> (Jasmeet Kaur) to Sangrur Biomass Pellets — score 89', time: "Yesterday, 11:05 AM" },
-  { type: "green", icon: "✓", text: 'Marked <b>L-101</b> as Processed — payment released to Gurpreet Singh', time: "3 days ago, 2:18 PM" },
-  { type: "blue", icon: "🔔", text: 'Submitted <b>weekly digest</b> for Sangrur to admin', time: "4 days ago, 9:00 AM" },
-];
-
-export default function ProfilePage({ user, notify }) {
-  const emailName = user?.email?.split("@")[0] || "Demo User";
-  const nameParts = emailName.split(/[.\-_]/);
-  const defaultFirst = nameParts[0]?.charAt(0).toUpperCase() + (nameParts[0]?.slice(1) || "");
-  const defaultLast = nameParts.length > 1 ? nameParts[1]?.charAt(0).toUpperCase() + (nameParts[1]?.slice(1) || "") : "";
-
-  const [firstName, setFirstName] = useState(defaultFirst || "Gurpreet");
-  const [lastName, setLastName] = useState(defaultLast || "Singh");
-  const [phone, setPhone] = useState("+91 98760 12345");
+export default function ProfilePage({ user, notify, onSwitchAccount }) {
+  const [firstName, setFirstName] = useState(user?.firstName || "Gurpreet");
+  const [lastName, setLastName] = useState(user?.lastName || "Singh");
+  const [phone, setPhone] = useState(user?.phone || "+91 98760 12345");
   const [email, setEmail] = useState(user?.email || "gurpreet.s@krishiloop.in");
-  const [bio, setBio] = useState("Covering Sangrur and surrounding blocks since 2024. Specialised in paddy straw collection logistics.");
-  const [role, setRole] = useState(user?.role || "Field Coordinator");
-  const [district, setDistrict] = useState("Sangrur");
-  const [org, setOrg] = useState("KrishiLoop Pvt. Ltd.");
+  const [bio, setBio] = useState(user?.bio || "Covering Sangrur and surrounding blocks since 2024. Specialised in paddy straw collection logistics.");
+  const [role, setRole] = useState(user?.role || "Farmer");
+  const [district, setDistrict] = useState(user?.district || "Sangrur");
+  const [org, setOrg] = useState(user?.org || "Dhuri Progressive Farmers Collective");
 
-  const initials = `${firstName[0] || ""}${lastName[0] || ""}`;
-  const fullName = `${firstName} ${lastName}`;
+  // Keep state in sync if switched to another account
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.firstName || user.name?.split(" ")[0] || "Gurpreet");
+      setLastName(user.lastName || user.name?.split(" ").slice(1).join(" ") || "Singh");
+      setPhone(user.phone || "+91 98760 12345");
+      setEmail(user.email || "demo@krishiloop.in");
+      setBio(user.bio || "");
+      setRole(user.role || "Farmer");
+      setDistrict(user.district || "Sangrur");
+      setOrg(user.org || "KrishiLoop Collective");
+    }
+  }, [user]);
+
+  const initials = user?.initials || `${firstName[0] || ""}${lastName[0] || ""}`;
+  const fullName = `${firstName} ${lastName}`.trim() || user?.name || "Demo User";
+  const stats = user?.stats || [
+    { label: "Farmers onboarded", value: "38" },
+    { label: "Residue listed this season", value: "186 t" },
+    { label: "Collection completion rate", value: "81%" },
+  ];
+  const activities = user?.recentActivity || [
+    { type: "green", icon: "✓", text: "Added <b>L-106</b> lot for Sukhdev Singh (7.4 t, Malerkotla)", time: "Today, 9:14 AM" },
+    { type: "straw", icon: "📈", text: "Updated collection route for <b>Sangrur cluster</b> — added stop at Lehragaga", time: "Yesterday, 4:32 PM" },
+    { type: "blue", icon: "🔔", text: "Matched <b>L-104</b> (Jasmeet Kaur) to Sangrur Biomass Pellets — score 89", time: "Yesterday, 11:05 AM" },
+    { type: "green", icon: "✓", text: "Marked <b>L-101</b> as Processed — payment released", time: "3 days ago, 2:18 PM" },
+  ];
 
   const saveProfile = () => {
-    notify?.("Profile saved successfully");
+    notify?.("Profile changes saved successfully.");
   };
 
   return (
     <>
       <header className="kl-heading">
         <div>
-          <div className="kl-eyebrow">YOUR PROFILE</div>
-          <h1>My Profile</h1>
-          <p>Manage your personal information and activity</p>
+          <div className="kl-eyebrow">YOUR PROFILE <span>·</span> ACCOUNT DETAILS</div>
+          <h1>{fullName}</h1>
+          <p>{role} · {district} district · {org}</p>
         </div>
-        <button className="primary" onClick={saveProfile}>Save changes</button>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button className="primary" onClick={saveProfile}>Save changes</button>
+        </div>
       </header>
 
       {/* Hero */}
       <div className="kl-profile-hero">
         <div className="kl-profile-avatar-wrap">
-          <div className="kl-profile-avatar-lg">{initials}</div>
+          <div className="kl-profile-avatar-lg" style={{ background: user?.avatarBg || "#d8b34d", color: user?.avatarColor || "#1a2717" }}>
+            {initials}
+          </div>
         </div>
         <div className="kl-profile-hero-info">
           <h2>{fullName}</h2>
-          <p>{role} · {district} district</p>
+          <p>{role} · {district} district · {user?.village || district}</p>
           <div className="kl-profile-badges">
-            <span className="kl-badge">✓ Verified</span>
-            <span className="kl-badge">🛡 {role}</span>
-            <span className="kl-badge">📅 Member since Oct 2024</span>
+            <span className="kl-badge">✓ {user?.badge || "Verified Account"}</span>
+            <span className="kl-badge">🛡 {role} Workspace</span>
+            <span className="kl-badge">📅 Member since {user?.memberSince || "Oct 2024"}</span>
+            <span className="kl-badge">🆔 {user?.employeeId || "KL-DEMO-01"}</span>
           </div>
         </div>
       </div>
 
+      {/* Switch Account Quick Bar */}
+      <section className="kl-panel" style={{ marginBottom: 20 }}>
+        <div className="kl-panel-title">
+          <div>
+            <div className="kl-eyebrow">SWITCH ACCOUNT</div>
+            <h3>Active Accounts in Punjab Pilot</h3>
+            <p className="kl-sub">Quickly switch persona to experience the complete circular loop workflow</p>
+          </div>
+          <span className="kl-pill">5 Demo Personas</span>
+        </div>
+        <div className="kl-accounts-switch-grid">
+          {DEMO_ACCOUNTS.map(acc => {
+            const isActive = acc.email === user?.email || acc.role === user?.role;
+            return (
+              <div
+                key={acc.id}
+                className={`kl-account-card ${isActive ? "active" : ""}`}
+                onClick={() => !isActive && onSwitchAccount?.(acc)}
+              >
+                <div className="kl-account-card-top">
+                  <div className="kl-account-avatar" style={{ background: acc.avatarBg, color: acc.avatarColor }}>
+                    {acc.initials}
+                  </div>
+                  <div className="kl-account-meta">
+                    <b>{acc.name}</b>
+                    <span className="kl-account-role-tag">{acc.role}</span>
+                  </div>
+                </div>
+                <div className="kl-account-district">📍 {acc.village}, {acc.district}</div>
+                <div className="kl-account-org">{acc.org}</div>
+                <div className="kl-account-action">
+                  {isActive ? (
+                    <span className="kl-active-indicator">● Active Account</span>
+                  ) : (
+                    <span className="kl-switch-link">Switch to this account →</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Stats */}
       <div className="kl-stat-row">
-        <div className="kl-stat-card"><b>38</b><span>Farmers onboarded</span></div>
-        <div className="kl-stat-card"><b>186 t</b><span>Residue listed this season</span></div>
-        <div className="kl-stat-card"><b>81%</b><span>Collection completion rate</span></div>
+        {stats.map((st, i) => (
+          <div className="kl-stat-card" key={i}>
+            <b>{st.value}</b>
+            <span>{st.label}</span>
+          </div>
+        ))}
       </div>
 
       {/* Edit forms */}
@@ -80,29 +144,39 @@ export default function ProfilePage({ user, notify }) {
           <label className="kl-field-full">Bio / Notes<textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} /></label>
         </div>
         <div className="kl-panel">
-          <h3>Work information</h3>
-          <p className="kl-sub">Role, district coverage and organisation</p>
-          <label className="kl-field-full">Role
-            <select value={role} onChange={e => setRole(e.target.value)}>
-              <option>Farmer</option><option>Collector</option><option>Processor</option><option>Buyer</option><option>Admin</option><option>Field Coordinator</option>
-            </select>
-          </label>
-          <label className="kl-field-full">Primary district
-            <select value={district} onChange={e => setDistrict(e.target.value)}>
-              <option>Sangrur</option><option>Patiala</option><option>Malerkotla</option><option>Barnala</option>
-            </select>
-          </label>
+          <h3>Work &amp; Organisation</h3>
+          <p className="kl-sub">Role, district coverage and organisation details</p>
+          <div className="kl-form-pair">
+            <label>Role
+              <select value={role} onChange={e => setRole(e.target.value)}>
+                <option>Farmer</option>
+                <option>Collector</option>
+                <option>Processor</option>
+                <option>Buyer</option>
+                <option>Admin</option>
+              </select>
+            </label>
+            <label>Primary district
+              <select value={district} onChange={e => setDistrict(e.target.value)}>
+                <option>Sangrur</option>
+                <option>Patiala</option>
+                <option>Malerkotla</option>
+                <option>Barnala</option>
+                <option>Chandigarh</option>
+              </select>
+            </label>
+          </div>
           <label className="kl-field-full">Organisation<input type="text" value={org} onChange={e => setOrg(e.target.value)} /></label>
-          <label className="kl-field-full">Employee ID<input type="text" value="KL-FC-007" disabled /></label>
+          <label className="kl-field-full">Account ID<input type="text" value={user?.employeeId || "KL-DEMO-001"} disabled /></label>
         </div>
       </div>
 
       {/* Activity feed */}
       <section className="kl-panel" style={{ marginBottom: 18 }}>
-        <h3>Recent activity</h3>
-        <p className="kl-sub">Your last actions on the platform</p>
+        <h3>Recent activity for {role}</h3>
+        <p className="kl-sub">Last actions and events on the platform for this persona</p>
         <div className="kl-activity-feed">
-          {activityData.map((a, i) => (
+          {activities.map((a, i) => (
             <div className="kl-activity-item" key={i}>
               <div className={`kl-activity-dot ${a.type}`}>{a.icon}</div>
               <div>
@@ -116,26 +190,35 @@ export default function ProfilePage({ user, notify }) {
 
       {/* Linked accounts */}
       <section className="kl-panel">
-        <h3>Linked accounts</h3>
-        <p className="kl-sub">Connect external services for faster access</p>
+        <h3>Connected services</h3>
+        <p className="kl-sub">External communication and operational channels</p>
         <div className="kl-security-item">
           <div className="kl-security-left">
             <div className="kl-security-icon green">📱</div>
-            <div className="kl-security-text"><h4>KrishiLoop Mobile App</h4><p>Linked · Last active 2 hours ago</p></div>
+            <div className="kl-security-text">
+              <h4>KrishiLoop Mobile App (Android)</h4>
+              <p>Linked · Last active 10 mins ago · GPS tracking enabled</p>
+            </div>
           </div>
           <span className="kl-status-pill ok">✓ Connected</span>
         </div>
         <div className="kl-security-item">
           <div className="kl-security-left">
-            <div className="kl-security-icon straw">📞</div>
-            <div className="kl-security-text"><h4>WhatsApp Business</h4><p>Receive field alerts via WhatsApp</p></div>
+            <div className="kl-security-icon straw">💬</div>
+            <div className="kl-security-text">
+              <h4>WhatsApp Field Bot &amp; Alerts</h4>
+              <p>{phone} · Instant pickup notices and receipts</p>
+            </div>
           </div>
-          <button className="secondary" onClick={() => notify?.("WhatsApp linked successfully!")}>Link</button>
+          <button className="secondary" onClick={() => notify?.("WhatsApp alerts refreshed.")}>Manage</button>
         </div>
         <div className="kl-security-item">
           <div className="kl-security-left">
             <div className="kl-security-icon blue">✉</div>
-            <div className="kl-security-text"><h4>Email notifications</h4><p>{email} · Active</p></div>
+            <div className="kl-security-text">
+              <h4>Email notifications</h4>
+              <p>{email} · Weekly digests &amp; payment receipts</p>
+            </div>
           </div>
           <span className="kl-status-pill ok">✓ Active</span>
         </div>

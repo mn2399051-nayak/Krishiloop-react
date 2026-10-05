@@ -53,7 +53,7 @@ function loadScript(apiKey) {
     };
 
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=${LIBRARIES}&callback=__krishiGmapsReady`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=${LIBRARIES}&loading=async&callback=__krishiGmapsReady`;
     script.async = true;
     script.defer = true;
     script.onerror = () => {
