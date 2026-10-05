@@ -165,4 +165,107 @@
 .kl-switch-modal-stats strong{color:var(--kl-ink);font-weight:700}
 .kl-active-badge{color:var(--kl-green);font-size:10px;font-weight:700;white-space:nowrap}
 
+/* ===== Back Button Controls ===== */
+.kl-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
+.kl-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px 0 9px;
+  border: 1px solid var(--kl-line);
+  border-radius: 8px;
+  background: var(--kl-panel);
+  color: var(--kl-ink);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.kl-back-btn:hover {
+  background: var(--kl-mint);
+  border-color: #a8c4af;
+  color: var(--kl-green);
+  transform: translateX(-2px);
+}
+
+.kl-back-btn:active {
+  transform: translateX(-1px) scale(0.98);
+}
+
+.kl-back-btn svg {
+  stroke: currentColor;
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.kl-back-btn:hover svg {
+  transform: translateX(-2px);
+}
+
+.kl-back-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Back Button in Page Headings */
+.kl-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kl-heading-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border: 1px solid var(--kl-line);
+  border-radius: 10px;
+  background: var(--kl-panel);
+  color: var(--kl-ink);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--kl-shadow);
+}
+
+.kl-heading-back-btn:hover {
+  background: var(--kl-mint);
+  border-color: var(--kl-green);
+  color: var(--kl-green);
+  transform: translateX(-3px);
+  box-shadow: 0 4px 14px rgba(45, 110, 74, 0.14);
+}
+
+.kl-heading-back-btn:active {
+  transform: translateX(-1px) scale(0.96);
+}
+
+.kl-heading-back-btn svg {
+  stroke: currentColor;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.kl-heading-back-btn:hover svg {
+  transform: translateX(-2px);
+}
+
+@media (max-width: 600px) {
+  .kl-heading-back-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+}

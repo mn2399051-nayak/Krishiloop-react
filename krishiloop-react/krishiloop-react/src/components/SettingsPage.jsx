@@ -26,7 +26,7 @@ function ToggleRow({ title, desc, checked = false, onToggle }) {
   );
 }
 
-export default function SettingsPage({ notify }) {
+export default function SettingsPage({ notify, onBack }) {
   const [tab, setTab] = useState("security");
   const [showPwForm, setShowPwForm] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
@@ -98,10 +98,26 @@ export default function SettingsPage({ notify }) {
   return (
     <>
       <header className="kl-heading">
-        <div>
-          <div className="kl-eyebrow">ACCOUNT</div>
-          <h1>Account settings</h1>
-          <p>Manage security, notifications and preferences</p>
+        <div className="kl-heading-left">
+          {onBack && (
+            <button
+              type="button"
+              className="kl-heading-back-btn"
+              onClick={onBack}
+              title="Go back"
+              aria-label="Go back"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+          )}
+          <div>
+            <div className="kl-eyebrow">ACCOUNT</div>
+            <h1>Account settings</h1>
+            <p>Manage security, notifications and preferences</p>
+          </div>
         </div>
       </header>
 

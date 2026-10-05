@@ -149,6 +149,7 @@ function ListingModal({ onClose, onSave }) {
 function AppShell({ user, onLogout, onSwitchAccount }) {
   const [data, setData] = useState(loadData);
   const [page, setPage] = useState("Overview");
+  const [pageHistory, setPageHistory] = useState([]);
   const [modal, setModal] = useState(false);
   const [accountModal, setAccountModal] = useState(false);
   const [toast, setToast] = useState("");
@@ -179,13 +180,35 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
     {label:"Pickup completion",value:`${data.jobs.length?Math.round(completedJobs/data.jobs.length*100):0}%`,hint:`${completedJobs} of ${data.jobs.length} pickup jobs`},
     {label:"Open supply lots",value:String(openLots.length),hint:"Available for matching"},
   ];
-  const addLot = f => { const lot={id:id("L",data.lots),farmer:f.farmer,village:f.village,location:f.village,residue:f.residue,est:Number(f.est),act:null,from:dateLabel(f.from),availableFrom:f.from,availableUntil:dateLabel(f.until),price:Number(f.price),quality:f.quality,status:"Listed",farmerId:f.farmer,pickupJob:null,history:[{status:"Listed",at:new Date().toISOString()}]};setData(d=>({...d,lots:[lot,...d.lots]}));setModal(false);setPage("My lots");notify("Listing published and ready for matching."); };
+  const nav = navigation[activeAccount.role] || navigation.Farmer;
+
+  const go = name => {
+    if (name !== page) {
+      setPageHistory(prev => [...prev, page]);
+    }
+    setPage(name);
+    setMobile(false);
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+
+  const goBack = () => {
+    if (pageHistory.length > 0) {
+      const prev = pageHistory[pageHistory.length - 1];
+      setPageHistory(prevList => prevList.slice(0, -1));
+      setPage(prev);
+    } else if (page !== "Overview") {
+      setPage("Overview");
+    } else {
+      notify("You are already on the Overview page");
+    }
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+
+  const addLot = f => { const lot={id:id("L",data.lots),farmer:f.farmer,village:f.village,location:f.village,residue:f.residue,est:Number(f.est),act:null,from:dateLabel(f.from),availableFrom:f.from,availableUntil:dateLabel(f.until),price:Number(f.price),quality:f.quality,status:"Listed",farmerId:f.farmer,pickupJob:null,history:[{status:"Listed",at:new Date().toISOString()}]};setData(d=>({...d,lots:[lot,...d.lots]}));setModal(false);go("My lots");notify("Listing published and ready for matching."); };
   const updateLot = (lotId, status, extra={}) => setData(d=>({...d,lots:d.lots.map(l=>l.id===lotId?{...l,...extra,status,history:[...(l.history||[]),{status,at:new Date().toISOString()}]}:l)}));
   const createJob = (lotIds, collector="Demo Collector") => { const group=data.lots.filter(l=>lotIds.includes(l.id)); if(!group.length)return; const job={id:id("J",data.jobs),lotIds,collector,status:"Planned",route:group.map(l=>l.village).join(" → ")+` → ${group[0].location||"Sangrur"} processor`,distance:group.reduce((n,l)=>n+kmBetween(l.village,"Sangrur"),0),schedule:new Date().toISOString().slice(0,10)};setData(d=>({...d,jobs:[job,...d.jobs],lots:d.lots.map(l=>lotIds.includes(l.id)?{...l,status:"Collection planned",pickupJob:job.id,history:[...(l.history||[]),{status:"Collection planned",at:new Date().toISOString()}]}:l)}));notify("Collection job created. Lots are now planned for pickup."); };
   const confirmPickup = job => { const actual=window.prompt("Enter actual collected quantity in tonnes:",String(data.lots.filter(l=>job.lotIds.includes(l.id)).reduce((n,l)=>n+Number(l.est),0).toFixed(1))); if(actual===null)return;const sum=Number(actual);const lots=data.lots.filter(l=>job.lotIds.includes(l.id));setData(d=>({...d,jobs:d.jobs.map(j=>j.id===job.id?{...j,status:"Collected",actualQuantity:sum,completedAt:new Date().toISOString()}:j),lots:d.lots.map(l=>job.lotIds.includes(l.id)?{...l,status:"Collected",act:Number((sum*Number(l.est)/lots.reduce((n,x)=>n+Number(x.est),0)).toFixed(1)),history:[...(l.history||[]),{status:"Collected",at:new Date().toISOString()}]}:l)}));notify("Pickup confirmed; actual quantities are recorded."); };
   const recordIntake = lot => { if(!lot)return;const qty=window.prompt(`Processor intake quantity for ${lot.id} (tonnes):`,String(lot.act??lot.est));if(qty===null)return;setData(d=>({...d,records:[{id:id("R",d.records),lotId:lot.id,processor:user.role==="Processor"?user.email.split("@")[0]:"Demo Processor",quantity:Number(qty),category:"Biomass feedstock",at:new Date().toISOString()},...d.records],lots:d.lots.map(l=>l.id===lot.id?{...l,status:"Processed",act:Number(qty),history:[...(l.history||[]),{status:"Processed",at:new Date().toISOString()}]}:l)}));notify(`${lot.id} processor intake recorded.`); };
-  const nav = navigation[activeAccount.role] || navigation.Farmer;
-  const go = name => {setPage(name);setMobile(false);window.scrollTo({top:0,behavior:"smooth"});};
   const matchRows = (lot) => data.processors.map(p=>{const distance=kmBetween(lot.village,p.location);const factors={compat:p.accepted.includes(lot.residue)?1:0,distance:Math.max(0,1-distance/90),quantity:Math.min(1,Number(lot.est)/Math.max(1,p.need/8)),timing:0.85,capacity:Math.min(1,p.capacity/Math.max(Number(lot.est),1)),quality:lot.quality==="Needs inspection"?.45:.85};return {...p,distance,parts:factors,percent:Math.round(score(factors)*100)};}).filter(m=>m.parts.compat).sort((a,b)=>b.percent-a.percent);
   const allMatches=matchRows(data.lots.find(l=>l.id===selectedLot)||openLots[0]||data.lots[0]||{village:"Sangrur",residue:"Paddy straw",est:1,quality:"Standard"});
   const exportCsv = () => {const rows=[["Lot","Farmer","Village","Residue","Estimated tonnes","Actual tonnes","Available from","Status"],...currentLots.map(l=>[l.id,l.farmer,l.village,l.residue,l.est,l.act??"",l.from,l.status])];const csv=rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="krishiloop-lots.csv";a.click();URL.revokeObjectURL(a.href);};
@@ -264,7 +287,28 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
 
       <main id="top" className="kl-main">
         <header className="kl-topbar">
-          <div className="kl-crumb">KrishiLoop <span>/</span> {page}</div>
+          <div className="kl-topbar-left">
+            <button
+              type="button"
+              className={`kl-back-btn ${pageHistory.length === 0 && page === "Overview" ? "disabled" : ""}`}
+              onClick={goBack}
+              title={
+                pageHistory.length > 0
+                  ? `Go back to ${pageHistory[pageHistory.length - 1]}`
+                  : page !== "Overview"
+                  ? "Go back to Overview"
+                  : "Go back"
+              }
+              aria-label="Go back"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>Back</span>
+            </button>
+            <div className="kl-crumb">KrishiLoop <span>/</span> {page}</div>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="kl-season"><i/>2026 harvest · Punjab</span>
             <button className="kl-theme" onClick={() => setDark(!dark)} title="Toggle theme">{dark ? "☀" : "☾"}</button>
@@ -300,10 +344,26 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
         </header>
 
         <header className="kl-heading">
-          <div>
-            <div className="kl-eyebrow">PILOT WORKSPACE <span>·</span> {activeAccount.role.toUpperCase()} MODE</div>
-            <h1>{pageTitle}</h1>
-            <p>Coordinate agricultural residue from field to processor with a traceable digital workflow.</p>
+          <div className="kl-heading-left">
+            {page !== "Overview" && (
+              <button
+                type="button"
+                className="kl-heading-back-btn"
+                onClick={goBack}
+                title={pageHistory.length > 0 ? `Go back to ${pageHistory[pageHistory.length - 1]}` : "Go back to Overview"}
+                aria-label="Go back"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+              </button>
+            )}
+            <div>
+              <div className="kl-eyebrow">PILOT WORKSPACE <span>·</span> {activeAccount.role.toUpperCase()} MODE</div>
+              <h1>{pageTitle}</h1>
+              <p>Coordinate agricultural residue from field to processor with a traceable digital workflow.</p>
+            </div>
           </div>
           {activeAccount.role === "Farmer" && page !== "Profile" && page !== "Settings" && (
             <Button onClick={() => setModal(true)}>＋ List residue</Button>
@@ -583,6 +643,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
           <ProfilePage
             user={activeAccount}
             notify={notify}
+            onBack={goBack}
             onSwitchAccount={acc => {
               onSwitchAccount(acc);
               notify(`Switched to ${acc.name} (${acc.role})`);
@@ -592,7 +653,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
 
         {/* Account Settings Page View */}
         {page === "Settings" && (
-          <SettingsPage notify={notify} />
+          <SettingsPage notify={notify} onBack={goBack} />
         )}
 
         <SiteFooter onLogout={onLogout} onNavigate={go}/>
