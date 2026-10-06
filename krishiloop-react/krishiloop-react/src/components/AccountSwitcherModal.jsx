@@ -23,12 +23,16 @@ export default function AccountSwitcherModal({ activeUser, onSelectAccount, onCl
                   onClose();
                 }}
               >
-                <div
-                  className="kl-switch-modal-avatar"
-                  style={{ background: acc.avatarBg, color: acc.avatarColor }}
-                >
-                  {acc.initials}
-                </div>
+                {acc.avatarUrl ? (
+                  <img src={acc.avatarUrl} alt={acc.name} className="kl-switch-modal-avatar-img" />
+                ) : (
+                  <div
+                    className="kl-switch-modal-avatar"
+                    style={{ background: acc.avatarBg, color: acc.avatarColor }}
+                  >
+                    {acc.initials}
+                  </div>
+                )}
                 <div className="kl-switch-modal-info">
                   <div className="kl-switch-modal-head">
                     <b>{acc.name}</b>

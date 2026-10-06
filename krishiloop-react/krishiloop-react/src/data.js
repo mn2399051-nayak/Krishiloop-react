@@ -29,9 +29,9 @@ export const districts = [
 ];
 
 export const processors = [
-  { id: "P1", name: "Sangrur Biomass Pellets", district: "Sangrur", need: 120 },
-  { id: "P2", name: "Malerkotla Bio-CNG Unit", district: "Malerkotla", need: 80 },
-  { id: "P3", name: "Patiala Paper Board Mill", district: "Patiala", need: 40 }
+  { id: "P1", name: "Sangrur Biomass Pellets", district: "Sangrur", need: 120, image: "/images/biomass_plant.jpg", type: "Biofuel Pellet Facility" },
+  { id: "P2", name: "Malerkotla Bio-CNG Unit", district: "Malerkotla", need: 80, image: "/images/biomass_plant.jpg", type: "Compressed Bio-Gas (CBG)" },
+  { id: "P3", name: "Patiala Paper Board Mill", district: "Patiala", need: 40, image: "/images/straw_bales.jpg", type: "Sustainable Paper & Pulp" }
 ];
 
 export const weights = {
@@ -60,12 +60,12 @@ export const matchFactors = {
 };
 
 export const lots = [
-  { id: "L-101", farmer: "Gurpreet Singh", village: "Longowal", est: 4.0, act: 3.8, from: "12 Oct", status: "Processed" },
-  { id: "L-102", farmer: "Harjinder Kaur", village: "Sunam", est: 6.5, act: 6.1, from: "14 Oct", status: "Collected" },
-  { id: "L-103", farmer: "Balwinder Singh", village: "Bhawanigarh", est: 3.2, act: null, from: "15 Oct", status: "Collection planned" },
-  { id: "L-104", farmer: "Jasmeet Kaur", village: "Dhuri", est: 5.0, act: null, from: "16 Oct", status: "Matched" },
-  { id: "L-105", farmer: "Amarjit Singh", village: "Lehragaga", est: 2.8, act: null, from: "18 Oct", status: "Listed" },
-  { id: "L-106", farmer: "Sukhdev Singh", village: "Malerkotla", est: 7.4, act: null, from: "18 Oct", status: "Listed" }
+  { id: "L-101", farmer: "Gurpreet Singh", village: "Longowal", est: 4.0, act: 3.8, from: "12 Oct", status: "Processed", image: "/images/straw_bales.jpg", moisture: "11.8%", baleType: "Square Bales", qualityGrade: "Premium A" },
+  { id: "L-102", farmer: "Harjinder Kaur", village: "Sunam", est: 6.5, act: 6.1, from: "14 Oct", status: "Collected", image: "/images/hero_harvest.jpg", moisture: "13.2%", baleType: "Round Bales", qualityGrade: "Grade A" },
+  { id: "L-103", farmer: "Balwinder Singh", village: "Bhawanigarh", est: 3.2, act: null, from: "15 Oct", status: "Collection planned", image: "/images/drone_fields.jpg", moisture: "14.0%", baleType: "Mechanized Bales", qualityGrade: "Standard" },
+  { id: "L-104", farmer: "Jasmeet Kaur", village: "Dhuri", est: 5.0, act: null, from: "16 Oct", status: "Matched", image: "/images/straw_bales.jpg", moisture: "12.5%", baleType: "Dense Bales", qualityGrade: "Premium A" },
+  { id: "L-105", farmer: "Amarjit Singh", village: "Lehragaga", est: 2.8, act: null, from: "18 Oct", status: "Listed", image: "/images/hero_harvest.jpg", moisture: "13.8%", baleType: "Mechanized Bales", qualityGrade: "Standard" },
+  { id: "L-106", farmer: "Sukhdev Singh", village: "Malerkotla", est: 7.4, act: null, from: "18 Oct", status: "Listed", image: "/images/drone_fields.jpg", moisture: "12.0%", baleType: "High Density Bales", qualityGrade: "Premium A" }
 ];
 
 export const route = {

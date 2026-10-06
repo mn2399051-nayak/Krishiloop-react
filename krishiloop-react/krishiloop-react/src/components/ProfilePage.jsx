@@ -73,11 +73,22 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
       </header>
 
       {/* Hero */}
-      <div className="kl-profile-hero">
+      <div
+        className="kl-profile-hero"
+        style={user?.coverUrl ? {
+          backgroundImage: `linear-gradient(135deg, rgba(6, 78, 59, 0.88) 0%, rgba(16, 185, 129, 0.75) 100%), url(${user.coverUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center"
+        } : undefined}
+      >
         <div className="kl-profile-avatar-wrap">
-          <div className="kl-profile-avatar-lg" style={{ background: user?.avatarBg || "#d8b34d", color: user?.avatarColor || "#1a2717" }}>
-            {initials}
-          </div>
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt={fullName} className="kl-profile-avatar-img" />
+          ) : (
+            <div className="kl-profile-avatar-lg" style={{ background: user?.avatarBg || "#d8b34d", color: user?.avatarColor || "#1a2717" }}>
+              {initials}
+            </div>
+          )}
         </div>
         <div className="kl-profile-hero-info">
           <h2>{fullName}</h2>
@@ -111,9 +122,13 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
                 onClick={() => !isActive && onSwitchAccount?.(acc)}
               >
                 <div className="kl-account-card-top">
-                  <div className="kl-account-avatar" style={{ background: acc.avatarBg, color: acc.avatarColor }}>
-                    {acc.initials}
-                  </div>
+                  {acc.avatarUrl ? (
+                    <img src={acc.avatarUrl} alt={acc.name} className="kl-account-avatar-img" />
+                  ) : (
+                    <div className="kl-account-avatar" style={{ background: acc.avatarBg, color: acc.avatarColor }}>
+                      {acc.initials}
+                    </div>
+                  )}
                   <div className="kl-account-meta">
                     <b>{acc.name}</b>
                     <span className="kl-account-role-tag">{acc.role}</span>

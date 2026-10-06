@@ -5,29 +5,52 @@ import GoogleMap from "./components/GoogleMap.jsx";
 import ProfilePage from "./components/ProfilePage.jsx";
 import SettingsPage from "./components/SettingsPage.jsx";
 import AccountSwitcherModal from "./components/AccountSwitcherModal.jsx";
+import HeroTelemetryBanner from "./components/HeroTelemetryBanner.jsx";
+import LiveFieldCameraWidget from "./components/LiveFieldCameraWidget.jsx";
 
 const seed = {
-  lots: seedLots.map((lot) => ({ ...lot, residue: lot.residue || "Paddy straw", location: lot.village, availableUntil: "31 Oct", price: 1800, quality: "Standard", farmerId: lot.farmer, pickupJob: null, history: [{ status: lot.status, at: "2026-10-12T09:00:00.000Z" }] })),
-  processors: seedProcessors.map((p, i) => ({ ...p, accepted: ["Paddy straw", ...(i === 2 ? ["Wheat straw"] : [])], capacity: p.need, specification: "Baled or loose, dry material", location: p.district })),
+  lots: seedLots.map((lot) => ({
+    ...lot,
+    residue: lot.residue || "Paddy straw",
+    location: lot.village,
+    availableUntil: "31 Oct",
+    price: 1800,
+    quality: lot.quality || "Standard",
+    farmerId: lot.farmer,
+    pickupJob: null,
+    image: lot.image || (lot.residue === "Wheat straw" ? "/images/hero_harvest.jpg" : "/images/straw_bales.jpg"),
+    moisture: lot.moisture || "12.4%",
+    baleType: lot.baleType || "Mechanized Bales",
+    history: [{ status: lot.status, at: "2026-10-12T09:00:00.000Z" }]
+  })),
+  processors: seedProcessors.map((p, i) => ({
+    ...p,
+    accepted: ["Paddy straw", ...(i === 2 ? ["Wheat straw"] : [])],
+    capacity: p.need,
+    specification: "Baled or loose, dry material",
+    location: p.district,
+    image: p.image || "/images/biomass_plant.jpg"
+  })),
   jobs: [],
   records: [],
   demands: [
-    { id: "D-201", processor: "Sangrur Biomass Pellets", residue: "Paddy straw", quantity: 80, due: "2026-11-10", location: "Sangrur", price: 1900, status: "Open" },
-    { id: "D-202", processor: "Malerkotla Bio-CNG Unit", residue: "Paddy straw", quantity: 45, due: "2026-11-18", location: "Malerkotla", price: 1750, status: "Open" },
-    { id: "D-203", processor: "Patiala Paper Board Mill", residue: "Wheat straw", quantity: 30, due: "2026-12-02", location: "Patiala", price: 1600, status: "Open" },
+    { id: "D-201", processor: "Sangrur Biomass Pellets", residue: "Paddy straw", quantity: 80, due: "2026-11-10", location: "Sangrur", price: 1900, status: "Open", image: "/images/biomass_plant.jpg", type: "Bio-Pellet Plant" },
+    { id: "D-202", processor: "Malerkotla Bio-CNG Unit", residue: "Paddy straw", quantity: 45, due: "2026-11-18", location: "Malerkotla", price: 1750, status: "Open", image: "/images/biomass_plant.jpg", type: "Bio-CNG Facility" },
+    { id: "D-203", processor: "Patiala Paper Board Mill", residue: "Wheat straw", quantity: 30, due: "2026-12-02", location: "Patiala", price: 1600, status: "Open", image: "/images/straw_bales.jpg", type: "Pulp & Paper Mill" },
   ],
 };
 const key = "krishiloop-project-data-v1";
 const roles = ["Farmer", "Collector", "Processor", "Buyer", "Admin"];
 const navigation = {
-  Farmer: ["Overview", "Marketplace", "My lots", "Matching", "Impact", "Profile", "Settings"],
-  Collector: ["Overview", "Marketplace", "Pickup jobs", "Routes", "Impact", "Profile", "Settings"],
-  Processor: ["Overview", "Marketplace", "Demand board", "Intake", "Impact", "Profile", "Settings"],
-  Buyer: ["Overview", "Marketplace", "Demand board", "Impact", "Profile", "Settings"],
-  Admin: ["Overview", "Marketplace", "Demand board", "Pickup jobs", "Intake", "Impact", "Profile", "Settings"],
+  Farmer: ["Overview", "Live Feeds", "Marketplace", "My lots", "Matching", "Impact", "Profile", "Settings"],
+  Collector: ["Overview", "Live Feeds", "Marketplace", "Pickup jobs", "Routes", "Impact", "Profile", "Settings"],
+  Processor: ["Overview", "Live Feeds", "Marketplace", "Demand board", "Intake", "Impact", "Profile", "Settings"],
+  Buyer: ["Overview", "Live Feeds", "Marketplace", "Demand board", "Impact", "Profile", "Settings"],
+  Admin: ["Overview", "Live Feeds", "Marketplace", "Demand board", "Pickup jobs", "Intake", "Impact", "Profile", "Settings"],
 };
 const icons = {
   Overview: "⌂",
+  "Live Feeds": "📹",
   Marketplace: "⌕",
   "My lots": "▤",
   Matching: "✳",
@@ -61,26 +84,46 @@ function Auth({ onLogin }) {
   return (
     <main className="kl-auth">
       <section className="kl-auth-art">
-        <a className="kl-brand" href="#home"><Mark>↗</Mark><span>KrishiLoop<small>AGRICULTURE, IN A LOOP</small></span></a>
-        <div>
-          <div className="kl-eyebrow">A BETTER WAY TO USE EVERY HARVEST</div>
-          <h1>Good for the soil.<br/><em>Great for your future.</em></h1>
-          <p>Connect farmers, collectors, processors and buyers. Give every residue lot a visible path from field to value.</p>
-          <div className="kl-proof">
-            <span>🌾</span>
-            <span><b>From residue to resource</b><small>A community-powered circular economy that starts after harvest.</small></span>
+        <div className="kl-auth-art-bg-img" />
+        <div className="kl-auth-art-overlay" />
+        <div className="kl-auth-art-inner">
+          <a className="kl-brand" href="#home"><Mark>↗</Mark><span>KrishiLoop<small>CIRCULAR AGRICULTURE & RESIDUE INTELLIGENCE</small></span></a>
+          <div>
+            <div className="kl-hero-badge" style={{ marginBottom: 16 }}>
+              <span className="kl-pulse-dot" />
+              <span className="kl-hero-badge-text">LIVE PILOT · SANGRUR & MALERKOTLA</span>
+            </div>
+            <div className="kl-eyebrow">A BETTER WAY TO USE EVERY HARVEST</div>
+            <h1>Good for the soil.<br/><em>Great for your future.</em></h1>
+            <p>Connect farmers, mechanized balers, bio-energy plants, and offtakers. Turn crop residue from field burn into measurable economic value.</p>
+            <div className="kl-proof">
+              <span className="kl-proof-icon">🌾</span>
+              <div>
+                <b>100% Zero-Burn Verified Supply Chain</b>
+                <small>Mechanized baler booking, automated route planning & direct DBT farmer payouts.</small>
+              </div>
+            </div>
+          </div>
+          <div className="kl-art-foot-badges">
+            <span className="kl-art-foot-pill">🟢 186.4 t Straw Diverted</span>
+            <span className="kl-art-foot-pill">🚜 14 Balers Live</span>
+            <span className="kl-art-foot-pill">⚡ 3 Bio-Plants Active</span>
           </div>
         </div>
-        <small className="kl-art-foot">Illustrative pilot experience · Punjab, India</small>
       </section>
       <section className="kl-auth-column">
         <div className="kl-auth-form">
           <form className="kl-auth-card" onSubmit={e => { e.preventDefault(); onLogin(email, role); }}>
-            <Mark>↗</Mark>
-            <div className="kl-eyebrow">YOUR LOOP STARTS HERE</div>
+            <div className="kl-auth-card-head">
+              <Mark>↗</Mark>
+              {activePreset.avatarUrl && (
+                <img src={activePreset.avatarUrl} alt={activePreset.name} className="kl-auth-persona-avatar" />
+              )}
+            </div>
+            <div className="kl-eyebrow">YOUR CIRCULAR LOOP STARTS HERE</div>
             <h2>Welcome to KrishiLoop</h2>
-            <p>Choose a demo role and enter your details.</p>
-            <label>Demo role persona</label>
+            <p>Select your persona to enter the demo agricultural workspace.</p>
+            <label>Select role persona</label>
             <div className="kl-role-grid">
               {roles.map(r => (
                 <button
@@ -107,7 +150,13 @@ function Auth({ onLogin }) {
             <input id="login-password" name="password" type="password" placeholder="Any password for this demo" minLength="4" required defaultValue="demo1234"/>
             <Button type="submit">Enter {role} workspace <span>→</span></Button>
             <div className="kl-demo-note">
-              Logging in as <b>{activePreset.name}</b> ({activePreset.org}). You can switch accounts at any time inside the app.
+              {activePreset.avatarUrl && (
+                <img src={activePreset.avatarUrl} alt={activePreset.name} className="kl-note-avatar" />
+              )}
+              <div>
+                Logging in as <b>{activePreset.name}</b> ({activePreset.role} · {activePreset.org}).
+                <small style={{ display: 'block', marginTop: 2, opacity: 0.85 }}>Instant persona switching is available anywhere in the workspace.</small>
+              </div>
             </div>
           </form>
         </div>
@@ -216,6 +265,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
   const stageQty=stageLabels.map(s=>data.lots.filter(l=>{const idx=stageLabels.indexOf(l.status);return idx>=stageLabels.indexOf(s);}).reduce((n,l)=>n+Number(l.act??l.est),0));
   const pageTitle = {
     Overview: "A clear view of your residue loop",
+    "Live Feeds": "Realtime Field & Plant Camera Network",
     Marketplace: "Supply and demand, in one place",
     "My lots": "Residue inventory",
     Matching: "Explainable supply matches",
@@ -241,6 +291,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
             <button key={n} className={page === n ? "active" : ""} onClick={() => go(n)}>
               <i>{icons[n]}</i>{n}
               {n === "My lots" && <span>{data.lots.length}</span>}
+              {n === "Live Feeds" && <span className="kl-nav-live-dot">●</span>}
             </button>
           ))}
         </nav>
@@ -255,7 +306,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
           title="Click to view & manage profile"
         >
           <div
-            className="kl-mark"
+            className="kl-mark kl-sidebar-avatar-mark"
             style={{
               background: activeAccount.avatarBg,
               color: activeAccount.avatarColor,
@@ -263,7 +314,11 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
               fontSize: 13,
             }}
           >
-            {activeAccount.initials}
+            {activeAccount.avatarUrl ? (
+              <img src={activeAccount.avatarUrl} alt={activeAccount.name} className="kl-avatar-img-sm" />
+            ) : (
+              activeAccount.initials
+            )}
           </div>
           <span className="kl-profile-info">
             <b>{activeAccount.name}</b>
@@ -310,6 +365,16 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
             <div className="kl-crumb">KrishiLoop <span>/</span> {page}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Live Camera Quick Access Pill */}
+            <button
+              className={`kl-live-feeds-pill ${page === "Live Feeds" ? "active" : ""}`}
+              onClick={() => go("Live Feeds")}
+              title="Open realtime field cameras & drone network"
+            >
+              <span className="kl-pulse-dot" />
+              <span>Live Cameras</span>
+            </button>
+
             <span className="kl-season"><i/>2026 harvest · Punjab</span>
             <button className="kl-theme" onClick={() => setDark(!dark)} title="Toggle theme">{dark ? "☀" : "☾"}</button>
 
@@ -323,7 +388,11 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
                 className="kl-topbar-avatar"
                 style={{ background: activeAccount.avatarBg, color: activeAccount.avatarColor }}
               >
-                {activeAccount.initials}
+                {activeAccount.avatarUrl ? (
+                  <img src={activeAccount.avatarUrl} alt={activeAccount.name} className="kl-avatar-img-xs" />
+                ) : (
+                  activeAccount.initials
+                )}
               </span>
               <span className="kl-topbar-name">{activeAccount.name.split(" ")[0]}</span>
             </div>
@@ -380,6 +449,15 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
 
         {page === "Overview" && (
           <>
+            <HeroTelemetryBanner
+              activeAccount={activeAccount}
+              onAction={(type, arg) => {
+                if (type === "listResidue") setModal(true);
+                else if (type === "navigate") go(arg);
+              }}
+              onOpenLiveFeed={() => go("Live Feeds")}
+            />
+
             <section className="kl-loop">
               <div className="kl-section-head">
                 <span><b>Your residue loop</b><small>Activity updates as the demo workflow moves forward</small></span>
@@ -430,12 +508,16 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
                 </div>
               </section>
             </div>
+
+            <LiveFieldCameraWidget />
+
             <section className="kl-section-title">
               <div><h2>Continue the workflow</h2><p>Open a role screen to explore the end-to-end supply chain.</p></div>
               <button className="kl-link" onClick={()=>go("Marketplace")}>Open marketplace →</button>
             </section>
             <div className="kl-quick-grid">
               {[
+                {n:"Live Feeds",t:"Watch real-time farmgate baler and plant intake camera feeds",i:"📹"},
                 {n:"Marketplace",t:"Explore available lots and processor requirements",i:"⌕"},
                 {n:activeAccount.role==="Processor"?"Demand board":"Matching",t:"Review explainable demand-side matches",i:"✳"},
                 {n:activeAccount.role==="Processor"?"Intake":"Pickup jobs",t:"Advance lots through collection and processing",i:"↗"}
@@ -447,6 +529,68 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
             </div>
             <RecentLots lots={data.lots.slice(0,5)} onView={()=>go("My lots")}/>
           </>
+        )}
+
+        {page === "Live Feeds" && (
+          <div className="kl-live-feeds-view">
+            <LiveFieldCameraWidget />
+            <div className="kl-two" style={{ marginTop: 20 }}>
+              <section className="kl-panel">
+                <div className="kl-panel-title">
+                  <div>
+                    <div className="kl-eyebrow">REGIONAL SATELLITE MONITOR</div>
+                    <h2>Zero-Burn Stubble Fire Prevention</h2>
+                  </div>
+                  <span className="kl-pill">Sentinel-2 / Drone Grid</span>
+                </div>
+                <div className="kl-satellite-strip">
+                  <img src="/images/drone_fields.jpg" alt="Drone farmland grid" className="kl-satellite-img" />
+                  <div className="kl-satellite-overlay">
+                    <span>🛰️ Sentinel-2 L2A Multispectral Feed · 10m Resolution</span>
+                    <b>0 Thermal Anomalies · 100% Zero-Burn Verified</b>
+                  </div>
+                </div>
+                <p className="kl-note" style={{ marginTop: 12 }}>
+                  Automated thermal anomaly surveillance across Sangrur, Dhuri, and Malerkotla. Automated SMS alerts trigger baler dispatch upon combine harvester exit.
+                </p>
+              </section>
+              <section className="kl-panel">
+                <div className="kl-panel-title">
+                  <div>
+                    <div className="kl-eyebrow">DEPOT WEIGHBRIDGES</div>
+                    <h2>Live Inbound Fleet</h2>
+                  </div>
+                  <span className="kl-pill">IoT Weighbridge</span>
+                </div>
+                <div className="kl-stop-list">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--kl-line)' }}>
+                    <span style={{ background: 'var(--kl-mint)', color: 'var(--kl-green)', width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 16 }}>🚜</span>
+                    <div style={{ flex: 1 }}>
+                      <b>PB-13-X-4921 · Tractor Trolley (14.2 t)</b>
+                      <small>From Dhuri Field #12 → Sangrur Bio-Pellets · Gate Queue: 1</small>
+                    </div>
+                    <span className="kl-status Collected">Inbound</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--kl-line)' }}>
+                    <span style={{ background: 'var(--kl-mint)', color: 'var(--kl-green)', width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 16 }}>🚛</span>
+                    <div style={{ flex: 1 }}>
+                      <b>PB-11-AB-8802 · Multi-Axle Bale Truck (22.0 t)</b>
+                      <small>From Sunam Central Depot → Malerkotla Bio-CNG</small>
+                    </div>
+                    <span className="kl-status Planned">En Route</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0' }}>
+                    <span style={{ background: 'var(--kl-mint)', color: 'var(--kl-green)', width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 16 }}>🌾</span>
+                    <div style={{ flex: 1 }}>
+                      <b>Baler Unit #04 (Mechanized Rake & Baler)</b>
+                      <small>Longowal East · 82 Bales packaged today</small>
+                    </div>
+                    <span className="kl-status Open">Baling</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
         )}
 
         {page === "Marketplace" && (
@@ -678,11 +822,189 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
 }
 
 function LotFilters({search,setSearch,filter,setFilter}) { return <div className="kl-tools"><input aria-label="Search lots" placeholder="Search by farmer, village or lot ID" value={search} onChange={e=>setSearch(e.target.value)}/><select value={filter} onChange={e=>setFilter(e.target.value)}><option>All residue</option>{["Paddy straw","Wheat straw","Mustard stalk","Other crop residue"].map(x=><option key={x}>{x}</option>)}</select></div>; }
-function LotCards({lots,role,onMatch,onPlan,onIntake}) { if(!lots.length)return <p className="kl-empty">No matching supply lots. Try another filter or create a listing.</p>;return <div className="kl-lot-grid">{lots.map(l=><article className="kl-lot-card" key={l.id}><header><Mark>⌁</Mark><span className={`kl-status ${l.status.replaceAll(" ","-")}`}>{l.status}</span></header><div className="kl-lot-type">{l.residue}</div><h3>{l.est} <small>tonnes estimated</small></h3><div className="kl-lot-meta"><span>⌖ {l.village}, Punjab</span><span>◷ {l.from}{l.availableUntil?` – ${l.availableUntil}`:""}</span><span>♧ {l.farmer}</span><span>₹ {Number(l.price||0).toLocaleString("en-IN")} / tonne · {l.quality}</span></div><div className="kl-card-actions">{role==="Farmer"||role==="Processor"||role==="Admin"?<Button secondary onClick={()=>onMatch(l)}>View matches</Button>:null}{["Collector","Admin"].includes(role)&&!["Collected","Processed"].includes(l.status)&&<Button onClick={()=>onPlan(l)}>Plan pickup</Button>}{["Processor","Admin"].includes(role)&&l.status==="Collected"&&<Button onClick={()=>onIntake(l)}>Record intake</Button>}</div></article>)}</div>; }
-function LotTable({lots,onPlan,onIntake,role}) {return <div className="kl-table-scroll"><table className="kl-table"><thead><tr><th>LOT / SUPPLY</th><th>FARMER</th><th>LOCATION</th><th>ESTIMATED</th><th>ACTUAL PICKUP</th><th>AVAILABLE</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>{lots.map(l=><tr key={l.id}><td><b>{l.id}</b><small>{l.residue}</small></td><td>{l.farmer}</td><td>{l.village}, Punjab</td><td>{l.est} t</td><td>{l.act==null?<span className="kl-muted">Pending</span>:`${l.act} t`}</td><td>{l.from}</td><td><span className={`kl-status ${l.status.replaceAll(" ","-")}`}>{l.status}</span></td><td>{["Collector","Admin"].includes(role)&&!["Collected","Processed"].includes(l.status)&&<button className="kl-row-action" onClick={()=>onPlan([l.id])}>Plan pickup</button>}{["Processor","Admin"].includes(role)&&l.status==="Collected"&&<button className="kl-row-action" onClick={()=>onIntake(l)}>Record intake</button>}</td></tr>)}</tbody></table>{!lots.length&&<p className="kl-empty">No lots to display.</p>}</div>;}
-function DemandCards({demands,onClose,showActions=false}) {return demands.length?<div className="kl-demand-grid">{demands.map(d=><article key={d.id} className="kl-demand-card"><header><span className="kl-demand-icon">◷</span><span className={`kl-status ${d.status}`}>{d.status}</span></header><h3>{d.processor}</h3><p>{d.residue} · {d.location}</p><div className="kl-demand-stats"><span><b>{d.quantity} t</b><small>Required volume</small></span><span><b>{dateLabel(d.due)}</b><small>Target date</small></span><span><b>₹{Number(d.price).toLocaleString("en-IN")}</b><small>Indicative / tonne</small></span></div>{showActions&&d.status==="Open"&&<button className="kl-row-action" onClick={()=>onClose?.(d)}>Mark requirement closed</button>}</article>)}</div>:<p className="kl-empty">There are no open requirements in this demo yet.</p>;}
+
+function LotCards({lots,role,onMatch,onPlan,onIntake}) {
+  if(!lots.length) return <p className="kl-empty">No matching supply lots. Try another filter or create a listing.</p>;
+  return (
+    <div className="kl-lot-grid">
+      {lots.map(l => {
+        const cardImg = l.image || (l.residue === "Wheat straw" ? "/images/hero_harvest.jpg" : "/images/straw_bales.jpg");
+        return (
+          <article className="kl-lot-card" key={l.id}>
+            <div className="kl-lot-media-wrap">
+              <img src={cardImg} alt={l.residue} className="kl-lot-cover-img" />
+              <div className="kl-lot-media-overlay" />
+              <div className="kl-lot-media-badges">
+                <span className="kl-lot-live-pill"><span className="kl-pulse-dot" /> LIVE RESIDUE</span>
+                <span className={`kl-status ${l.status.replaceAll(" ","-")}`}>{l.status}</span>
+              </div>
+            </div>
+            <div className="kl-lot-card-body">
+              <div className="kl-lot-card-head">
+                <span className="kl-lot-type">{l.residue}</span>
+                <span className="kl-lot-quality-badge">{l.quality || "Standard"}</span>
+              </div>
+              <h3 className="kl-lot-amount">{l.est} <small>tonnes estimated</small></h3>
+              <div className="kl-lot-telemetry-tags">
+                <span className="kl-lot-chip">💧 {l.moisture || "12.4%"} moisture</span>
+                <span className="kl-lot-chip">🌾 {l.baleType || "Mechanized Bales"}</span>
+              </div>
+              <div className="kl-lot-meta">
+                <span>📍 {l.village}, Punjab</span>
+                <span>⏱ {l.from}{l.availableUntil?` – ${l.availableUntil}`:""}</span>
+                <span>👨‍🌾 {l.farmer}</span>
+                <span>💰 ₹{Number(l.price||0).toLocaleString("en-IN")} / tonne</span>
+              </div>
+              <div className="kl-card-actions">
+                {(role==="Farmer"||role==="Processor"||role==="Admin") && (
+                  <Button secondary onClick={()=>onMatch(l)}>⚡ View matches</Button>
+                )}
+                {["Collector","Admin"].includes(role) && !["Collected","Processed"].includes(l.status) && (
+                  <Button onClick={()=>onPlan(l)}>Plan pickup</Button>
+                )}
+                {["Processor","Admin"].includes(role) && l.status==="Collected" && (
+                  <Button onClick={()=>onIntake(l)}>Record intake</Button>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function LotTable({lots,onPlan,onIntake,role}) {
+  return (
+    <div className="kl-table-scroll">
+      <table className="kl-table">
+        <thead>
+          <tr>
+            <th>LOT / SUPPLY</th>
+            <th>FARMER</th>
+            <th>LOCATION</th>
+            <th>ESTIMATED</th>
+            <th>ACTUAL PICKUP</th>
+            <th>AVAILABLE</th>
+            <th>STATUS</th>
+            <th>ACTION</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lots.map(l => (
+            <tr key={l.id}>
+              <td>
+                <div className="kl-table-lot-cell">
+                  <img src={l.image || "/images/straw_bales.jpg"} alt="" className="kl-table-thumb"/>
+                  <div>
+                    <b>{l.id}</b>
+                    <small>{l.residue} · {l.moisture || "12%"} moist</small>
+                  </div>
+                </div>
+              </td>
+              <td>{l.farmer}</td>
+              <td>{l.village}, Punjab</td>
+              <td>{l.est} t</td>
+              <td>{l.act==null?<span className="kl-muted">Pending</span>:`${l.act} t`}</td>
+              <td>{l.from}</td>
+              <td><span className={`kl-status ${l.status.replaceAll(" ","-")}`}>{l.status}</span></td>
+              <td>
+                {["Collector","Admin"].includes(role) && !["Collected","Processed"].includes(l.status) && (
+                  <button className="kl-row-action" onClick={()=>onPlan([l.id])}>Plan pickup</button>
+                )}
+                {["Processor","Admin"].includes(role) && l.status==="Collected" && (
+                  <button className="kl-row-action" onClick={()=>onIntake(l)}>Record intake</button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!lots.length && <p className="kl-empty">No lots to display.</p>}
+    </div>
+  );
+}
+
+function DemandCards({demands,onClose,showActions=false}) {
+  if(!demands.length) return <p className="kl-empty">There are no open requirements in this demo yet.</p>;
+  return (
+    <div className="kl-demand-grid">
+      {demands.map(d => (
+        <article key={d.id} className="kl-demand-card">
+          <div className="kl-demand-media-wrap">
+            <img src={d.image || "/images/biomass_plant.jpg"} alt={d.processor} className="kl-demand-cover-img" />
+            <div className="kl-demand-media-overlay" />
+            <div className="kl-demand-media-badges">
+              <span className="kl-demand-live-pill">⚡ {d.type || "Bio-Energy Unit"}</span>
+              <span className={`kl-status ${d.status}`}>{d.status}</span>
+            </div>
+          </div>
+          <div className="kl-demand-card-body">
+            <h3>{d.processor}</h3>
+            <p className="kl-demand-sub">🌱 {d.residue} · 📍 {d.location}</p>
+            <div className="kl-demand-stats">
+              <span><b>{d.quantity} t</b><small>Target volume</small></span>
+              <span><b>{dateLabel(d.due)}</b><small>Required by</small></span>
+              <span><b>₹{Number(d.price).toLocaleString("en-IN")}</b><small>Indicative / t</small></span>
+            </div>
+            {showActions && d.status === "Open" && (
+              <button className="kl-row-action" onClick={()=>onClose?.(d)}>Mark requirement closed</button>
+            )}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function JobCards({jobs,lots,role,onPickup}) {return jobs.length?<div className="kl-job-grid">{jobs.map(j=>{const group=lots.filter(l=>j.lotIds.includes(l.id));return <article className="kl-panel kl-job" key={j.id}><header><span className="kl-job-id">{j.id}</span><span className={`kl-status ${j.status}`}>{j.status}</span></header><h3>{j.route}</h3><p>{group.map(l=>l.id).join(" · ")} · {group.reduce((n,l)=>n+l.est,0).toFixed(1)} t estimated</p><div className="kl-job-info"><span>Collector<b>{j.collector}</b></span><span>Suggested distance<b>~{j.distance} km</b></span><span>Scheduled<b>{dateLabel(j.schedule)}</b></span></div>{j.status!=="Collected"&&["Collector","Admin"].includes(role)&&<Button onClick={()=>onPickup(j)}>Confirm pickup & actual quantity</Button>}{j.status==="Collected"&&<p className="kl-success">✓ Pickup confirmed · {j.actualQuantity} t actual total</p>}</article>;})}</div>:null;}
-function RecentLots({lots,onView}) {return <section className="kl-panel kl-recent"><div className="kl-panel-title"><div><div className="kl-eyebrow">RECENTLY UPDATED</div><h2>Residue lots</h2></div><button className="kl-link" onClick={onView}>View inventory →</button></div><div className="kl-table-scroll"><table className="kl-table"><thead><tr><th>LOT</th><th>FARMER</th><th>VILLAGE</th><th>QUANTITY</th><th>STATUS</th></tr></thead><tbody>{lots.map(l=><tr key={l.id}><td><b>{l.id}</b></td><td>{l.farmer}</td><td>{l.village}</td><td>{l.est} t</td><td><span className={`kl-status ${l.status.replaceAll(" ","-")}`}>{l.status}</span></td></tr>)}</tbody></table></div></section>;}
+
+function RecentLots({lots,onView}) {
+  return (
+    <section className="kl-panel kl-recent">
+      <div className="kl-panel-title">
+        <div>
+          <div className="kl-eyebrow">RECENTLY UPDATED</div>
+          <h2>Residue lots</h2>
+        </div>
+        <button className="kl-link" onClick={onView}>View inventory →</button>
+      </div>
+      <div className="kl-table-scroll">
+        <table className="kl-table">
+          <thead>
+            <tr>
+              <th>LOT</th>
+              <th>FARMER</th>
+              <th>VILLAGE</th>
+              <th>QUANTITY</th>
+              <th>STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lots.map(l => (
+              <tr key={l.id}>
+                <td>
+                  <div className="kl-table-lot-cell">
+                    <img src={l.image || "/images/straw_bales.jpg"} alt="" className="kl-table-thumb"/>
+                    <div>
+                      <b>{l.id}</b>
+                      <small>{l.residue}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>{l.farmer}</td>
+                <td>{l.village}</td>
+                <td>{l.est} t</td>
+                <td><span className={`kl-status ${l.status.replaceAll(" ","-")}`}>{l.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function EmptyCard({title,text,action,onClick}) {return <div className="kl-empty-card"><span>↗</span><b>{title}</b><p>{text}</p>{action&&<button className="kl-link" onClick={onClick}>{action} →</button>}</div>;}
 function SiteFooter({onLogout,onNavigate}) {const navTo=name=>onNavigate?onNavigate(name):document.getElementById("login-email")?.focus();return <footer className="kl-footer"><button className="kl-footer-top" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>↑ &nbsp;Back to top</button><div className="kl-footer-main"><div className="kl-footer-groups"><section><h3>Get to know KrishiLoop</h3><button onClick={()=>navTo("Overview")}>About the project</button><button onClick={()=>navTo("Impact")}>Our impact approach</button><button onClick={()=>navTo("Marketplace")}>Punjab pilot</button><button onClick={()=>navTo("Overview")}>How the residue loop works</button></section><section><h3>Join the residue network</h3><button onClick={()=>navTo("Marketplace")}>List and discover residue</button><button onClick={()=>navTo("Demand board")}>Post processor demand</button><button onClick={()=>navTo("Pickup jobs")}>Coordinate collection</button><button onClick={()=>navTo("Matching")}>Explore smart matching</button></section><section><h3>For partners</h3><button onClick={()=>navTo("Routes")}>Collectors and aggregators</button><button onClick={()=>navTo("Intake")}>Processors and buyers</button><button onClick={()=>navTo("Demand board")}>Ecosystem organizations</button><button onClick={()=>navTo("Impact")}>Pilot activity reports</button></section><section><h3>Let us help you</h3><button onClick={()=>navTo("Profile")}>Account and profile</button><button onClick={()=>navTo("Settings")}>System settings & API</button><button onClick={()=>window.alert("Demo listings and activity are stored in this browser only.")}>Data and privacy</button>{onLogout&&<button onClick={onLogout}>Sign out</button>}</section></div><div className="kl-footer-bottom"><a href="#top" className="kl-footer-brand"><Mark>↗</Mark><span><b>KrishiLoop</b><small>Residue to value</small></span></a><span className="kl-footer-region">🌾 &nbsp;Punjab, India <i/> Illustrative pilot prototype</span><span className="kl-footer-copy">© 2026 KrishiLoop · Turning residue into a resource</span></div></div></footer>;}
 
