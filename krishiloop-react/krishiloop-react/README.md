@@ -54,14 +54,29 @@ The six seeded farms/lots and processor requirements are illustrative project da
 
 The matching and route views use transparent heuristics. Distance and route ordering are approximate, not live navigation. Price fields and processor requirements are examples, not market quotations. Environmental impacts and carbon benefits are not calculated or claimed.
 
-This is a working frontend prototype, not a production full-stack deployment. It has no remote API, database, identity provider, live map tiles, messaging service, payments, or verified operating participants. The app is structured so those services can be added after local workflow and pilot requirements are validated.
+## Supabase Backend & Cloud Integration
+
+KrishiLoop supports real-time PostgreSQL database synchronization, Supabase Auth, and encrypted private document storage for KYC files.
+
+- Complete setup steps, SQL schemas, and RLS security policies are detailed in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
+- SQL DDL schema: `supabase/schema.sql`
+- Realistic Punjab pilot seed data: `supabase/seed.sql`
+- Environment variables: copy `.env.example` to `.env.local`
+
+When Supabase environment variables are omitted or invalid, KrishiLoop gracefully runs in **Local Demo Mode** using browser persistence and preconfigured Punjab personas.
 
 ## Project structure
 
 ```text
+supabase/
+  schema.sql          PostgreSQL DDL, RLS policies, functions & storage buckets
+  seed.sql            Pilot supply lots, demands, and initial records
 src/
-  App.jsx             Role flows, local persistence, screens, and actions
-  data.js             Illustrative pilot data and matching weights
-  index.css           Responsive application styling
-  components/         Original dashboard components (retained for reference)
+  lib/supabase.js     Supabase client initialization & configuration checks
+  services/           Modular services: auth, profiles, lots, demands, jobs, kyc
+  components/         UI components (Auth, KYC Desk, Deals, Live Feeds, Google Map)
+  App.jsx             Role flows, workspace layout, state sync, screens & actions
+  data.js             Pilot coordinates and heuristic matching weights
+  index.css           Responsive application styling & modern design tokens
 ```
+

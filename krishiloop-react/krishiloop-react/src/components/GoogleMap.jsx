@@ -87,10 +87,10 @@ export default function GoogleMap({
 
       const statusColor =
         lot.status === "Collected" ? "#41815d"
-        : lot.status === "Processed" ? "#53775c"
-        : lot.status === "Matched" ? "#4d7898"
-        : lot.status === "Collection planned" ? "#667ca6"
-        : "#8f6e28";
+          : lot.status === "Processed" ? "#53775c"
+            : lot.status === "Matched" ? "#4d7898"
+              : lot.status === "Collection planned" ? "#667ca6"
+                : "#8f6e28";
 
       const info = new google.InfoWindow({
         content: `

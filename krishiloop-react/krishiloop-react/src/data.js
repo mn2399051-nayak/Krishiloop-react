@@ -29,9 +29,42 @@ export const districts = [
 ];
 
 export const processors = [
-  { id: "P1", name: "Sangrur Biomass Pellets", district: "Sangrur", need: 120, image: "/images/biomass_plant.jpg", type: "Biofuel Pellet Facility" },
-  { id: "P2", name: "Malerkotla Bio-CNG Unit", district: "Malerkotla", need: 80, image: "/images/biomass_plant.jpg", type: "Compressed Bio-Gas (CBG)" },
-  { id: "P3", name: "Patiala Paper Board Mill", district: "Patiala", need: 40, image: "/images/straw_bales.jpg", type: "Sustainable Paper & Pulp" }
+  {
+    id: "P1",
+    name: "Sangrur Biomass Pellets",
+    district: "Sangrur",
+    need: 120,
+    image: "/images/biomass_plant.jpg",
+    type: "Biofuel Pellet Facility",
+    phone: "+91 98722 54321",
+    email: "procurement@sangrurbiomass.in",
+    contactPerson: "Sunil Jain (Plant Head)",
+    workingHours: "8:00 AM - 7:00 PM"
+  },
+  {
+    id: "P2",
+    name: "Malerkotla Bio-CNG Unit",
+    district: "Malerkotla",
+    need: 80,
+    image: "/images/biomass_plant.jpg",
+    type: "Compressed Bio-Gas (CBG)",
+    phone: "+91 98140 33221",
+    email: "feedstock@malerkotlabiocng.com",
+    contactPerson: "Gurmeet Singh (Feedstock Manager)",
+    workingHours: "7:30 AM - 6:30 PM"
+  },
+  {
+    id: "P3",
+    name: "Patiala Paper Board Mill",
+    district: "Patiala",
+    need: 40,
+    image: "/images/straw_bales.jpg",
+    type: "Sustainable Paper & Pulp",
+    phone: "+91 98881 77665",
+    email: "supply@patialapaper.org",
+    contactPerson: "Raman Sharma (Procurement Lead)",
+    workingHours: "8:30 AM - 6:00 PM"
+  }
 ];
 
 export const weights = {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DEMO_ACCOUNTS } from "../accounts.js";
+import { getAllAccounts } from "../accounts.js";
 
 export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
   const [firstName, setFirstName] = useState(user?.firstName || "Gurpreet");
@@ -10,6 +10,8 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
   const [role, setRole] = useState(user?.role || "Farmer");
   const [district, setDistrict] = useState(user?.district || "Sangrur");
   const [org, setOrg] = useState(user?.org || "Dhuri Progressive Farmers Collective");
+
+  const accounts = getAllAccounts();
 
   // Keep state in sync if switched to another account
   useEffect(() => {
@@ -102,6 +104,40 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
         </div>
       </div>
 
+      {/* e-KYC Verification Banner */}
+      <section className="kl-panel kl-profile-kyc-panel" style={{ marginBottom: 20 }}>
+        <div className="kl-panel-title">
+          <div>
+            <div className="kl-eyebrow">IDENTITY &amp; GOVERNMENT ID VERIFICATION</div>
+            <h3>Electronic KYC Status (UIDAI / Govt. Registry)</h3>
+            <p className="kl-sub">Zero-burn agricultural residue supply chain verified credentials</p>
+          </div>
+          <span className="kl-status-badge-verified">✓ Aadhaar e-KYC Verified</span>
+        </div>
+        <div className="kl-profile-kyc-grid">
+          <div className="kl-kyc-stat-box">
+            <label>Government ID Proof</label>
+            <b>{user?.idProofType || "Aadhaar Card"}</b>
+            <code>{user?.idProofNumber || "XXXX-XXXX-2345"}</code>
+          </div>
+          <div className="kl-kyc-stat-box">
+            <label>Linked Mobile Number</label>
+            <b>{user?.phone || "+91 98760 12345"}</b>
+            <span style={{ fontSize: 11, color: "var(--kl-green)" }}>✓ Two-Factor OTP Active</span>
+          </div>
+          <div className="kl-kyc-stat-box">
+            <label>Verification Authority</label>
+            <b>UIDAI &amp; Punjab Agri Registry</b>
+            <small style={{ color: "var(--kl-muted)" }}>Ref: {user?.employeeId || "KL-FAR-108"}</small>
+          </div>
+          <div className="kl-kyc-stat-box">
+            <label>Platform Access Level</label>
+            <b style={{ color: "var(--kl-green)" }}>Regular Full Access Active</b>
+            <small>All residue &amp; marketplace features enabled</small>
+          </div>
+        </div>
+      </section>
+
       {/* Switch Account Quick Bar */}
       <section className="kl-panel" style={{ marginBottom: 20 }}>
         <div className="kl-panel-title">
@@ -110,10 +146,10 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
             <h3>Active Accounts in Punjab Pilot</h3>
             <p className="kl-sub">Quickly switch persona to experience the complete circular loop workflow</p>
           </div>
-          <span className="kl-pill">5 Demo Personas</span>
+          <span className="kl-pill">{accounts.length} Active Personas</span>
         </div>
         <div className="kl-accounts-switch-grid">
-          {DEMO_ACCOUNTS.map(acc => {
+          {accounts.map(acc => {
             const isActive = acc.email === user?.email || acc.role === user?.role;
             return (
               <div

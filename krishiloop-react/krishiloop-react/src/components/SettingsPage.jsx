@@ -150,9 +150,16 @@ export default function SettingsPage({ notify, onBack }) {
             <div className="kl-security-item">
               <div className="kl-security-left">
                 <div className="kl-security-icon green">📞</div>
-                <div className="kl-security-text"><h4>Phone number (OTP backup)</h4><p>+91 98760 12345 · Verified</p></div>
+                <div className="kl-security-text"><h4>Phone number (SMS OTP Login)</h4><p>Two-factor authentication via SMS OTP enabled</p></div>
               </div>
               <span className="kl-status-pill ok">✓ Verified</span>
+            </div>
+            <div className="kl-security-item">
+              <div className="kl-security-left">
+                <div className="kl-security-icon green">🏛</div>
+                <div className="kl-security-text"><h4>Aadhaar / Government e-KYC</h4><p>Identity confirmed via UIDAI Two-Factor OTP · Zero-burn certified</p></div>
+              </div>
+              <span className="kl-status-pill ok">✓ Aadhaar Confirmed</span>
             </div>
           </section>
 

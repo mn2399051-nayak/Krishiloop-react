@@ -1,6 +1,7 @@
-import { DEMO_ACCOUNTS } from "../accounts.js";
+import { getAllAccounts } from "../accounts.js";
 
 export default function AccountSwitcherModal({ activeUser, onSelectAccount, onClose }) {
+  const accounts = getAllAccounts();
   return (
     <div className="kl-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
       <div className="kl-modal kl-account-switcher-modal">
@@ -10,7 +11,7 @@ export default function AccountSwitcherModal({ activeUser, onSelectAccount, onCl
         <p>Experience the entire residue loop by switching between different supply chain roles.</p>
 
         <div className="kl-switch-modal-list">
-          {DEMO_ACCOUNTS.map(acc => {
+          {accounts.map(acc => {
             const isActive = acc.email === activeUser?.email || acc.role === activeUser?.role;
             return (
               <div
