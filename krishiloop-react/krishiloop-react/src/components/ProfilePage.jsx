@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { getAllAccounts } from "../accounts.js";
+import { isSupabaseConfigured } from "../lib/supabase.js";
+import { profileService } from "../services/supabaseService.js";
 
-export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
+export default function ProfilePage({ user, notify, onSwitchAccount, onUpdateUser, onBack }) {
   const [firstName, setFirstName] = useState(user?.firstName || "Gurpreet");
   const [lastName, setLastName] = useState(user?.lastName || "Singh");
   const [phone, setPhone] = useState(user?.phone || "+91 98760 12345");
@@ -41,7 +43,57 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
     { type: "green", icon: "✓", text: "Marked <b>L-101</b> as Processed — payment released", time: "3 days ago, 2:18 PM" },
   ];
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
+    const updatedUser = {
+      ...user,
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`.trim(),
+      phone,
+      email,
+      bio,
+      district,
+      org,
+      initials: `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase()
+    };
+
+    try {
+      localStorage.setItem("krishiloop-session", JSON.stringify(updatedUser));
+      const customRaw = localStorage.getItem("krishiloop-custom-accounts");
+      if (customRaw) {
+        const customAccs = JSON.parse(customRaw);
+        if (Array.isArray(customAccs)) {
+          const updatedCustom = customAccs.map(a => a.id === user?.id ? { ...a, ...updatedUser } : a);
+          localStorage.setItem("krishiloop-custom-accounts", JSON.stringify(updatedCustom));
+        }
+      }
+    } catch (e) {
+      console.warn("Error updating localStorage profile:", e);
+    }
+
+    if (isSupabaseConfigured() && user?.id) {
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id);
+      if (isValidUuid) {
+        try {
+          await profileService.updateProfile(user.id, {
+            full_name: updatedUser.name,
+            phone,
+            district,
+            org,
+            updated_at: new Date().toISOString()
+          });
+        } catch (e) {
+          console.warn("Failed to sync profile update to Supabase:", e);
+        }
+      }
+    }
+
+    if (onUpdateUser) {
+      onUpdateUser(updatedUser);
+    } else if (onSwitchAccount) {
+      onSwitchAccount(updatedUser);
+    }
+
     notify?.("Profile changes saved successfully.");
   };
 
@@ -214,14 +266,14 @@ export default function ProfilePage({ user, notify, onSwitchAccount, onBack }) {
           <h3>Work &amp; Organisation</h3>
           <p className="kl-sub">Role, district coverage and organisation details</p>
           <div className="kl-form-pair">
-            <label>Role
-              <select value={role} onChange={e => setRole(e.target.value)}>
-                <option>Farmer</option>
-                <option>Collector</option>
-                <option>Processor</option>
-                <option>Buyer</option>
-                <option>Admin</option>
-              </select>
+            <label>Role (Verified via e-KYC)
+              <input
+                type="text"
+                value={role}
+                disabled
+                readOnly
+                title="Your platform role is authenticated via UIDAI e-KYC and cannot be modified directly."
+              />
             </label>
             <label>Primary district
               <select value={district} onChange={e => setDistrict(e.target.value)}>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { THEME_CONFIGS } from "./ThemeSwitcherModal.jsx";
 
 const loginHistoryData = [
   { time: "02 Oct 2026, 9:00 AM", device: "Chrome / Windows", location: "Chandigarh", ok: true },
@@ -26,15 +27,28 @@ function ToggleRow({ title, desc, checked = false, onToggle }) {
   );
 }
 
-export default function SettingsPage({ notify, onBack }) {
+export default function SettingsPage({
+  notify,
+  onBack,
+  activeThemeKey = "seller",
+  themeOverride = "auto",
+  onSelectTheme,
+  userRole = "Farmer",
+  dark = false,
+  onToggleDark
+}) {
   const [tab, setTab] = useState("security");
   const [showPwForm, setShowPwForm] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
-  const [theme, setTheme] = useState("system");
+  const [theme, setTheme] = useState(() => dark ? "dark" : "light");
   const [mapsKey, setMapsKey] = useState(() => localStorage.getItem("krishiloop_gmaps_key") || "");
   const [showKey, setShowKey] = useState(false);
+
+  useEffect(() => {
+    setTheme(dark ? "dark" : "light");
+  }, [dark]);
 
   const pwScore = (() => {
     let sc = 0;
@@ -73,10 +87,17 @@ export default function SettingsPage({ notify, onBack }) {
     notify?.("Google Maps API key cleared.");
   };
 
-  const handleTheme = (t, cls) => {
+  const handleTheme = (t) => {
     setTheme(t);
-    if (t === "dark") document.documentElement.classList.add("kl-dark-mode");
-    else document.documentElement.classList.remove("kl-dark-mode");
+    const isDark = t === "dark" || (t === "system" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+    if (onToggleDark) {
+      onToggleDark(isDark);
+    }
+    if (isDark) {
+      document.documentElement.classList.add("kl-dark");
+    } else {
+      document.documentElement.classList.remove("kl-dark");
+    }
     notify?.(`Switched to ${t} mode`);
   };
 
@@ -277,6 +298,78 @@ export default function SettingsPage({ notify, onBack }) {
                   <span>{t.charAt(0).toUpperCase() + t.slice(1)}</span>
                 </button>
               ))}
+            </div>
+          </section>
+
+          <section className="kl-panel" style={{ marginBottom: 18 }}>
+            <div className="kl-panel-title">
+              <div>
+                <h3>Role-Tailored Dashboard Theme</h3>
+                <p className="kl-sub">
+                  Dynamic visual identity customized to your supply chain role ({userRole || "User"})
+                </p>
+              </div>
+              <span className="kl-pill">Adaptive Role UI</span>
+            </div>
+
+            <div className="kl-role-theme-settings-list">
+              <div
+                className={`kl-role-theme-setting-item ${themeOverride === "auto" ? "active" : ""}`}
+                onClick={() => {
+                  onSelectTheme?.("auto");
+                  notify?.(`Reset dashboard theme to follow your role (${userRole})`);
+                }}
+              >
+                <div className="kl-role-theme-radio">
+                  <span className={`kl-radio-dot ${themeOverride === "auto" ? "active" : ""}`} />
+                </div>
+                <div className="kl-role-theme-content">
+                  <div className="kl-role-theme-head">
+                    <b>⚡ Auto (Follows Active Role: {userRole})</b>
+                    <span className="kl-status-pill ok">Recommended</span>
+                  </div>
+                  <p>
+                    Automatically switches themes whenever you switch roles (e.g. Seller → Harvest Gold, Buyer → Executive Sapphire).
+                  </p>
+                </div>
+              </div>
+
+              {Object.values(THEME_CONFIGS).map((cfg) => {
+                const isSelected = activeThemeKey === cfg.id && themeOverride !== "auto";
+                const isRoleDefault = (userRole.toLowerCase().includes(cfg.id) || (cfg.id === "seller" && userRole === "Farmer"));
+
+                return (
+                  <div
+                    key={cfg.id}
+                    className={`kl-role-theme-setting-item ${isSelected ? "active" : ""}`}
+                    onClick={() => {
+                      onSelectTheme?.(cfg.id);
+                      notify?.(`Switched to ${cfg.name}`);
+                    }}
+                  >
+                    <div className="kl-role-theme-radio">
+                      <span className={`kl-radio-dot ${isSelected ? "active" : ""}`} />
+                    </div>
+                    <div className="kl-role-theme-icon" style={{ background: cfg.accentGradient }}>
+                      {cfg.icon}
+                    </div>
+                    <div className="kl-role-theme-content">
+                      <div className="kl-role-theme-head">
+                        <b>{cfg.name}</b>
+                        <span className="kl-role-theme-sub-badge">{cfg.tagline}</span>
+                        {isRoleDefault && themeOverride === "auto" && (
+                          <span className="kl-active-role-tag">● Role Default</span>
+                        )}
+                      </div>
+                      <p>{cfg.description}</p>
+                    </div>
+                    <div className="kl-role-theme-swatches">
+                      <span style={{ background: cfg.colors.primary }} />
+                      <span style={{ background: cfg.colors.accent }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
           <section className="kl-panel" style={{ marginBottom: 18 }}>

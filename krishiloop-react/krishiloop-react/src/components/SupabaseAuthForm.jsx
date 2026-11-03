@@ -13,7 +13,8 @@ const DISTRICTS = [
   "Fatehgarh Sahib"
 ];
 
-const ROLES = ["Farmer", "Collector", "Processor", "Buyer", "Admin"];
+// Only non-admin roles can be self-selected during registration
+const ROLES = ["Farmer", "Buyer", "Processor", "Collector"];
 
 export default function SupabaseAuthForm({ onComplete, onCancel }) {
   const configured = isSupabaseConfigured();
@@ -45,14 +46,15 @@ export default function SupabaseAuthForm({ onComplete, onCancel }) {
         // Fetch user profile from Supabase
         const { data: profile } = await profileService.getProfile(data.user.id);
         const resolvedRole = profile?.role || "Farmer";
+        const canonicalRole = resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1).toLowerCase();
         const account = {
           id: data.user.id,
           name: profile?.full_name || email.split("@")[0],
           email: data.user.email,
           phone: profile?.phone || "",
           district: profile?.district || "Sangrur",
-          role: resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1).toLowerCase(),
-          isAadhaarVerified: !!profile?.aadhaar_verified,
+          role: canonicalRole,
+          isAadhaarVerified: Boolean(profile?.is_verified),
           isLiveSupabase: true
         };
         onComplete(account);
@@ -76,10 +78,16 @@ export default function SupabaseAuthForm({ onComplete, onCancel }) {
     }
 
     try {
-      const normalizedRole = role.toLowerCase();
+      if (role.toLowerCase() === "admin") {
+        setError("Administrative accounts cannot be self-registered. Please contact the Directorate.");
+        setLoading(false);
+        return;
+      }
+      const canonicalRole = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
       const { data, error: signUpErr } = await authService.signUp(email, password, {
+        fullName,
         full_name: fullName,
-        role: normalizedRole,
+        role: canonicalRole,
         district,
         phone
       });
@@ -91,14 +99,15 @@ export default function SupabaseAuthForm({ onComplete, onCancel }) {
       }
 
       if (data?.user) {
-        // Ensure profile is created/upserted in the profiles table
+        // Ensure profile is created/upserted in the profiles table with valid schema columns
         await profileService.upsertProfile({
           id: data.user.id,
           full_name: fullName,
-          role: normalizedRole,
+          role: canonicalRole,
           district,
           phone,
-          aadhaar_verified: false
+          is_verified: false,
+          kyc_status: "Pending"
         });
 
         // If email confirmation is required by Supabase settings:
@@ -109,7 +118,7 @@ export default function SupabaseAuthForm({ onComplete, onCancel }) {
             email: data.user.email,
             phone,
             district,
-            role,
+            role: canonicalRole,
             isAadhaarVerified: false,
             isLiveSupabase: true
           };

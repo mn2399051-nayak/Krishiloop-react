@@ -14,7 +14,7 @@ export const authService = {
       password,
       options: {
         data: {
-          full_name: metadata.fullName || metadata.name || "",
+          full_name: metadata.fullName || metadata.full_name || metadata.name || "",
           role: metadata.role || "Farmer",
           phone: metadata.phone || "",
           district: metadata.district || "Sangrur",
@@ -221,6 +221,7 @@ export const lotsService = {
     const dbUpdates = {};
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.act !== undefined) dbUpdates.act = Number(updates.act);
+    else if (updates.actual_quantity !== undefined) dbUpdates.act = Number(updates.actual_quantity);
     if (updates.est !== undefined) dbUpdates.est = Number(updates.est);
     if (updates.pickupJob !== undefined) dbUpdates.pickup_job_id = updates.pickupJob;
     if (updates.history !== undefined) dbUpdates.history = updates.history;
@@ -371,8 +372,8 @@ export const jobsService = {
     return { data, error };
   },
 
-  // Confirm job pickup with actual collected quantity
-  async confirmPickup(jobId, actualQuantity) {
+  // Confirm job pickup with actual collected quantity and update lot statuses
+  async confirmPickup(jobId, actualQuantity, lotIds = []) {
     if (!isSupabaseConfigured()) return { data: null, error: null };
 
     const { data, error } = await supabase
@@ -385,6 +386,19 @@ export const jobsService = {
       .eq("id", jobId)
       .select()
       .single();
+
+    if (!error && Array.isArray(lotIds) && lotIds.length > 0) {
+      try {
+        await supabase
+          .from("produce_lots")
+          .update({
+            status: "Collected",
+          })
+          .in("id", lotIds);
+      } catch (lotErr) {
+        console.warn("Could not batch update produce_lots to Collected:", lotErr);
+      }
+    }
 
     return { data, error };
   },

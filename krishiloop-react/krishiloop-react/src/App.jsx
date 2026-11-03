@@ -5,12 +5,19 @@ import GoogleMap from "./components/GoogleMap.jsx";
 import ProfilePage from "./components/ProfilePage.jsx";
 import SettingsPage from "./components/SettingsPage.jsx";
 import AccountSwitcherModal from "./components/AccountSwitcherModal.jsx";
+import ThemeSwitcherModal, { THEME_CONFIGS } from "./components/ThemeSwitcherModal.jsx";
 import HeroTelemetryBanner from "./components/HeroTelemetryBanner.jsx";
 import LiveFieldCameraWidget from "./components/LiveFieldCameraWidget.jsx";
 import PhoneOtpKycFlow from "./components/PhoneOtpKycFlow.jsx";
 import AdminKycManagement from "./components/AdminKycManagement.jsx";
 import ContactPartnerModal from "./components/ContactPartnerModal.jsx";
 import SupabaseAuthForm from "./components/SupabaseAuthForm.jsx";
+import FarmerDashboard from "./components/dashboards/FarmerDashboard.jsx";
+import BuyerDashboard from "./components/dashboards/BuyerDashboard.jsx";
+import AdminDashboard from "./components/dashboards/AdminDashboard.jsx";
+import TransporterDashboard from "./components/dashboards/TransporterDashboard.jsx";
+import HelpSupportModal from "./components/HelpSupportModal.jsx";
+import KrishiLoopAppIcon from "./components/KrishiLoopAppIcon.jsx";
 import { isSupabaseConfigured } from "./lib/supabase.js";
 import {
   authService,
@@ -60,11 +67,21 @@ const seed = {
 const key = "krishiloop-project-data-v1";
 const roles = ["Farmer", "Collector", "Processor", "Buyer", "Admin"];
 const navigation = {
-  Farmer: ["Overview", "Live Feeds", "Marketplace", "My lots", "Matching", "Impact", "Profile", "Settings"],
-  Collector: ["Overview", "Live Feeds", "Marketplace", "Pickup jobs", "Routes", "Impact", "Profile", "Settings"],
-  Processor: ["Overview", "Live Feeds", "Marketplace", "Demand board", "Intake", "Impact", "Profile", "Settings"],
-  Buyer: ["Overview", "Live Feeds", "Marketplace", "Demand board", "Impact", "Profile", "Settings"],
-  Admin: ["Overview", "Live Feeds", "Marketplace", "Demand board", "Pickup jobs", "Intake", "Impact", "User Verification", "Profile", "Settings"],
+  Farmer: ["Overview", "My lots", "Matching", "Live Feeds", "Impact", "Profile", "Settings"],
+  Buyer: ["Overview", "Marketplace", "Demand board", "Live Feeds", "Impact", "Profile", "Settings"],
+  Collector: ["Overview", "Pickup jobs", "Routes", "Intake", "Live Feeds", "Impact", "Profile", "Settings"],
+  Transporter: ["Overview", "Pickup jobs", "Routes", "Intake", "Live Feeds", "Impact", "Profile", "Settings"],
+  Processor: ["Overview", "Marketplace", "Demand board", "Intake", "Live Feeds", "Impact", "Profile", "Settings"],
+  Admin: ["Overview", "User Verification", "Marketplace", "Demand board", "Pickup jobs", "Intake", "Live Feeds", "Impact", "Profile", "Settings"],
+};
+
+const getRoleNav = (role) => {
+  const r = (role || "").toLowerCase();
+  if (r.includes("buyer")) return navigation.Buyer;
+  if (r.includes("process")) return navigation.Processor;
+  if (r.includes("collect") || r.includes("transport")) return navigation.Collector;
+  if (r.includes("admin")) return navigation.Admin;
+  return navigation.Farmer;
 };
 const icons = {
   Overview: "⌂",
@@ -107,7 +124,6 @@ const loadData = () => {
 const dateLabel = (value) => value ? new Date(`${value}T12:00:00`).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "Flexible";
 const id = (prefix, list) => `${prefix}-${String(201 + list.length).padStart(3, "0")}`;
 const kmBetween = (a = "Sangrur", b = "Sangrur") => { const x = VILLAGE_COORDS[a] || VILLAGE_COORDS.Sangrur, y = VILLAGE_COORDS[b] || VILLAGE_COORDS.Sangrur; const dlat = (x[0] - y[0]) * 111, dlon = (x[1] - y[1]) * 96; return Math.max(1, Math.round(Math.hypot(dlat, dlon))); };
-function Mark({ children, style }) { return <span className="kl-mark" style={style}>{children}</span>; }
 function Button({ children, onClick, secondary = false, type = "button", disabled = false }) { return <button className={secondary ? "secondary" : "primary"} onClick={onClick} type={type} disabled={disabled}>{children}</button>; }
 function Metric({ label, value, hint }) { return <article className="kl-metric"><span>{label}</span><b>{value}</b><small>{hint}</small></article>; }
 
@@ -150,7 +166,7 @@ function Auth({ onLogin, rememberMe, setRememberMe }) {
         <div className="kl-auth-art-bg-img" />
         <div className="kl-auth-art-overlay" />
         <div className="kl-auth-art-inner">
-          <a className="kl-brand" href="#home"><Mark>↗</Mark><span>KrishiLoop<small>CIRCULAR AGRICULTURE & RESIDUE INTELLIGENCE</small></span></a>
+          <a className="kl-brand" href="#home"><KrishiLoopAppIcon size={40} /><span>KrishiLoop<small>CIRCULAR AGRICULTURE & RESIDUE INTELLIGENCE</small></span></a>
           <div>
             <div className="kl-hero-badge" style={{ marginBottom: 16 }}>
               <span className="kl-pulse-dot" />
@@ -242,7 +258,7 @@ function Auth({ onLogin, rememberMe, setRememberMe }) {
             ) : (
               <form onSubmit={handleDemoSubmit}>
                 <div className="kl-auth-card-head">
-                  <Mark>↗</Mark>
+                  <KrishiLoopAppIcon size={44} />
                   {activePreset.avatarUrl && (
                     <img src={activePreset.avatarUrl} alt={activePreset.name} className="kl-auth-persona-avatar" />
                   )}
@@ -454,16 +470,62 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
   const [filter, setFilter] = useState("All residue");
   const [selectedLot, setSelectedLot] = useState("");
   const [contactPartnerModal, setContactPartnerModal] = useState(null);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    try {
+      return localStorage.getItem("krishiloop-dark") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("krishiloop-dark", String(dark));
+      if (dark) {
+        document.documentElement.classList.add("kl-dark");
+      } else {
+        document.documentElement.classList.remove("kl-dark");
+      }
+    } catch {}
+  }, [dark]);
+
   const [mobile, setMobile] = useState(false);
   const [backendStatus, setBackendStatus] = useState(() => isSupabaseConfigured() ? "online" : "demo");
   const [backendLoading, setBackendLoading] = useState(false);
+  const [themeOverride, setThemeOverride] = useState(() => {
+    try {
+      return localStorage.getItem("krishiloop-theme-override") || "auto";
+    } catch {
+      return "auto";
+    }
+  });
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Compute enriched active account
   const activeAccount = useMemo(() => {
     const base = findAccountByRoleOrEmail(user?.email || user?.role);
     return { ...base, ...user };
   }, [user]);
+
+  const getRoleThemeKey = (role) => {
+    const r = (role || "").toLowerCase();
+    if (r.includes("buyer")) return "buyer";
+    if (r.includes("process")) return "processor";
+    if (r.includes("collect") || r.includes("transport")) return "collector";
+    if (r.includes("admin")) return "admin";
+    return "seller"; // Default for Farmer / Seller
+  };
+
+  const activeThemeKey = themeOverride === "auto" ? getRoleThemeKey(activeAccount.role) : themeOverride;
+  const activeThemeMeta = THEME_CONFIGS[activeThemeKey] || THEME_CONFIGS.seller;
+
+  const handleSelectTheme = (key) => {
+    setThemeOverride(key);
+    try {
+      localStorage.setItem("krishiloop-theme-override", key);
+    } catch {}
+  };
 
   useEffect(() => { localStorage.setItem(key, JSON.stringify(data)); }, [data]);
 
@@ -513,9 +575,15 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
     { label: "Pickup completion", value: `${data.jobs.length ? Math.round(completedJobs / data.jobs.length * 100) : 0}%`, hint: `${completedJobs} of ${data.jobs.length} pickup jobs` },
     { label: "Open supply lots", value: String(openLots.length), hint: "Available for matching" },
   ];
-  const nav = navigation[activeAccount.role] || navigation.Farmer;
+  const nav = getRoleNav(activeAccount.role);
 
   const go = name => {
+    const allowed = getRoleNav(activeAccount.role);
+    const universalPages = ["Overview", "Profile", "Settings", "Live Feeds", "Impact"];
+    if (!allowed.includes(name) && !universalPages.includes(name) && activeAccount.role !== "Admin") {
+      notify(`The ${name} section is restricted for ${activeAccount.role} accounts.`);
+      return;
+    }
     if (name !== page) {
       setPageHistory(prev => [...prev, page]);
     }
@@ -666,8 +734,6 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
   const matchRows = (lot) => data.processors.map(p => { const distance = kmBetween(lot.village, p.location); const factors = { compat: p.accepted.includes(lot.residue) ? 1 : 0, distance: Math.max(0, 1 - distance / 90), quantity: Math.min(1, Number(lot.est) / Math.max(1, p.need / 8)), timing: 0.85, capacity: Math.min(1, p.capacity / Math.max(Number(lot.est), 1)), quality: lot.quality === "Needs inspection" ? .45 : .85 }; return { ...p, distance, parts: factors, percent: Math.round(score(factors) * 100) }; }).filter(m => m.parts.compat).sort((a, b) => b.percent - a.percent);
   const allMatches = matchRows(data.lots.find(l => l.id === selectedLot) || openLots[0] || data.lots[0] || { village: "Sangrur", residue: "Paddy straw", est: 1, quality: "Standard" });
   const exportCsv = () => { const rows = [["Lot", "Farmer", "Village", "Residue", "Estimated tonnes", "Actual tonnes", "Available from", "Status"], ...currentLots.map(l => [l.id, l.farmer, l.village, l.residue, l.est, l.act ?? "", l.from, l.status])]; const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(",")).join("\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "krishiloop-lots.csv"; a.click(); URL.revokeObjectURL(a.href); };
-  const stageLabels = ["Listed", "Matched", "Collection planned", "Collected", "Processed"];
-  const stageQty = stageLabels.map(s => data.lots.filter(l => { const idx = stageLabels.indexOf(l.status); return idx >= stageLabels.indexOf(s); }).reduce((n, l) => n + Number(l.act ?? l.est), 0));
   const pageTitle = {
     Overview: "A clear view of your residue loop",
     "Live Feeds": "Realtime Field & Plant Camera Network",
@@ -685,12 +751,20 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
   }[page];
 
   return (
-    <div className={`kl-app ${dark ? "kl-dark" : ""}`}>
+    <div className={`kl-app ${dark ? "kl-dark" : ""} kl-theme-${activeThemeKey}`}>
       <aside className={`kl-side ${mobile ? "open" : ""}`}>
         <a href="#top" className="kl-brand">
-          <Mark>↗</Mark>
+          <KrishiLoopAppIcon size={36} />
           <span>KrishiLoop<small>AGRICULTURE, IN A LOOP</small></span>
         </a>
+        <div
+          className="kl-side-role-badge"
+          onClick={() => setShowThemeModal(true)}
+          title={`Click to view or change dashboard theme (Current: ${activeThemeMeta.name})`}
+        >
+          <span className="kl-role-badge-icon">{activeThemeMeta.icon}</span>
+          <span className="kl-role-badge-text">{activeThemeMeta.badgeText}</span>
+        </div>
         <div className="kl-side-label">WORKSPACE</div>
         <nav>
           {nav.map(n => (
@@ -772,29 +846,10 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
             <div className="kl-crumb">KrishiLoop <span>/</span> {page}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Live Camera Quick Access Pill */}
-            <button
-              className={`kl-live-feeds-pill ${page === "Live Feeds" ? "active" : ""}`}
-              onClick={() => go("Live Feeds")}
-              title="Open realtime field cameras & drone network"
-            >
-              <span className="kl-pulse-dot" />
-              <span>Live Cameras</span>
-            </button>
-
-            {/* Supabase Realtime Backend Status Indicator */}
-            <div
-              className={`kl-backend-pill ${backendStatus === "online" ? "online" : "demo"}`}
-              title={
-                backendStatus === "online"
-                  ? "Connected to Supabase PostgreSQL & Storage"
-                  : "Running on local/demo storage. Configure VITE_SUPABASE_URL in .env.local to connect live backend."
-              }
-            >
-              <span className={`kl-backend-dot ${backendStatus === "online" ? "online" : "demo"}`} />
-              <span>{backendStatus === "online" ? "Supabase Online" : "Local Demo Mode"}</span>
-            </div>
-
+            <span className={`kl-backend-pill ${backendStatus}`} title={backendStatus === "online" ? "Supabase Cloud Connected" : "Local Browser Demo Storage"}>
+              <span className={`kl-backend-dot ${backendStatus}`} />
+              {backendStatus === "online" ? "Cloud Connected" : "Local Demo"}
+            </span>
             <span className="kl-season"><i />2026 harvest · Punjab</span>
             <button className="kl-theme" onClick={() => setDark(!dark)} title="Toggle theme">{dark ? "☀" : "☾"}</button>
 
@@ -814,7 +869,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
                   activeAccount.initials
                 )}
               </span>
-              <span className="kl-topbar-name">{activeAccount.name.split(" ")[0]}</span>
+              <span className="kl-topbar-name">{(activeAccount?.name || "User").split(" ")[0]}</span>
               <span className="kl-topbar-verified-tag" title="UIDAI Aadhaar Verified">✓ Verified</span>
             </div>
 
@@ -827,6 +882,15 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
                 🛡 KYC Desk
               </button>
             )}
+
+            {/* Help & Support Desk in Topbar */}
+            <button
+              className="secondary kl-help-topbar-btn"
+              onClick={() => setShowHelpModal(true)}
+              title="Help & Regulatory Support Desk"
+            >
+              ? Help
+            </button>
 
             {/* Quick Switch button in Topbar */}
             <button
@@ -880,23 +944,9 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
 
         {page === "Overview" && (
           <>
-            {activeAccount.role === "Admin" && (
-              <section className="kl-panel kl-admin-overview-alert" style={{ marginBottom: 18, borderLeft: "4px solid var(--kl-green)" }}>
-                <div className="kl-panel-title">
-                  <div>
-                    <div className="kl-eyebrow">ADMIN DESK · VERIFICATION &amp; ONBOARDING</div>
-                    <h2 style={{ fontSize: 18, margin: "2px 0 4px" }}>Onboard &amp; Verify Field Participants</h2>
-                    <p className="kl-sub">Register new farmers and supply chain partners via Mobile OTP &amp; Aadhaar e-KYC</p>
-                  </div>
-                  <Button onClick={() => go("User Verification")}>
-                    🛡 Open KYC &amp; Verification Desk →
-                  </Button>
-                </div>
-              </section>
-            )}
-
             <HeroTelemetryBanner
               activeAccount={activeAccount}
+              activeThemeKey={activeThemeKey}
               onAction={(type, arg) => {
                 if (type === "listResidue") setModal(true);
                 else if (type === "navigate") go(arg);
@@ -904,76 +954,65 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
               onOpenLiveFeed={() => go("Live Feeds")}
             />
 
-            <section className="kl-loop">
-              <div className="kl-section-head">
-                <span><b>Your residue loop</b><small>Activity updates as the demo workflow moves forward</small></span>
-                <span className="kl-live"><i /> Browser-saved</span>
-              </div>
-              <div className="kl-stages">
-                {["Listed", "Matched", "Collection planned", "Collected", "Processed"].map((s, i) => (
-                  <div key={s}>
-                    <strong>{stageQty[i].toFixed(1)}<small> t</small></strong>
-                    <span>{s}</span>
-                    <i style={{ width: `${Math.min(100, stageQty[i] / Math.max(stageQty[0], 1) * 100)}%` }} />
-                  </div>
-                ))}
-              </div>
-            </section>
-            <section className="kl-metrics">{kpis.map(k => <Metric key={k.label} {...k} />)}</section>
-            <div className="kl-two">
-              <section className="kl-panel">
-                <div className="kl-panel-title">
-                  <div><div className="kl-eyebrow">LOCAL SUPPLY & DEMAND</div><h2>Punjab pilot activity</h2></div>
-                  <span className="kl-pill">Illustrative</span>
-                </div>
-                <div className="kl-bars">
-                  {["Sangrur", "Patiala", "Malerkotla", "Barnala"].map(name => {
-                    const supply = data.lots.filter(l => l.village === name || name === "Sangrur").reduce((n, l) => n + Number(l.est), 0);
-                    const demand = data.demands.filter(d => d.location === name).reduce((n, d) => n + d.quantity, 0);
-                    return (
-                      <div className="kl-bar-row" key={name}>
-                        <span>{name}</span>
-                        <div><i style={{ width: `${Math.min(100, supply / Math.max(totalListed, 1) * 100)}%` }} /></div>
-                        <b>{supply.toFixed(0)} t</b>
-                        <small>Demand {demand} t</small>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="kl-legend"><span><i /> Listed supply</span><span><i /> Open demand</span></div>
-              </section>
-              <section className="kl-panel">
-                <div className="kl-panel-title">
-                  <div><div className="kl-eyebrow">NEXT COLLECTION</div><h2>Route planning</h2></div>
-                  <button className="kl-link" onClick={() => go("Routes")}>View routes →</button>
-                </div>
-                <GoogleMap lots={routeLots} depot={DEFAULT_DEPOT} height={360} />
-                <div className="kl-route-foot">
-                  <span><b>{routeLots.length || 0} stops</b><small>Nearest Sangrur cluster</small></span>
-                  <span><b>{routeLots.reduce((n, l) => n + kmBetween(l.village), 0)} km</b><small>Approx. road distance</small></span>
-                </div>
-              </section>
-            </div>
+            {/* Role-Specific Dashboard Views */}
+            {(activeAccount.role === "Farmer" || activeAccount.role?.toLowerCase() === "farmer") && (
+              <FarmerDashboard
+                activeAccount={activeAccount}
+                lots={data.lots}
+                demands={data.demands}
+                processors={data.processors}
+                jobs={data.jobs}
+                records={data.records}
+                loading={backendLoading}
+                onAddLot={() => setModal(true)}
+                onUpdateLot={updateLot}
+                onContactPartner={(partner, lot) => setContactPartnerModal({ partner, lot })}
+                onNavigate={go}
+                notify={notify}
+              />
+            )}
 
-            <LiveFieldCameraWidget />
+            {(activeAccount.role === "Buyer" || activeAccount.role?.toLowerCase() === "buyer" || activeAccount.role === "Processor" || activeAccount.role?.toLowerCase() === "processor") && (
+              <BuyerDashboard
+                activeAccount={activeAccount}
+                lots={data.lots}
+                demands={data.demands}
+                records={data.records}
+                jobs={data.jobs}
+                loading={backendLoading}
+                onPostDemand={() => go("Demand board")}
+                onContactFarmer={(partner, lot) => setContactPartnerModal({ partner, lot })}
+                onNavigate={go}
+                notify={notify}
+              />
+            )}
 
-            <section className="kl-section-title">
-              <div><h2>Continue the workflow</h2><p>Open a role screen to explore the end-to-end supply chain.</p></div>
-              <button className="kl-link" onClick={() => go("Marketplace")}>Open marketplace →</button>
-            </section>
-            <div className="kl-quick-grid">
-              {[
-                { n: "Live Feeds", t: "Watch real-time farmgate baler and plant intake camera feeds", i: "📹" },
-                { n: "Marketplace", t: "Explore available lots and processor requirements", i: "⌕" },
-                { n: activeAccount.role === "Processor" ? "Demand board" : "Matching", t: "Review explainable demand-side matches", i: "✳" },
-                { n: activeAccount.role === "Processor" ? "Intake" : "Pickup jobs", t: "Advance lots through collection and processing", i: "↗" }
-              ].map(x => (
-                <button key={x.n} onClick={() => go(x.n)}>
-                  <span>{x.i}</span><b>{x.n}</b><small>{x.t}</small><i>→</i>
-                </button>
-              ))}
-            </div>
-            <RecentLots lots={data.lots.slice(0, 5)} onView={() => go("My lots")} />
+            {(activeAccount.role === "Admin" || activeAccount.role?.toLowerCase() === "admin") && (
+              <AdminDashboard
+                activeAccount={activeAccount}
+                lots={data.lots}
+                demands={data.demands}
+                records={data.records}
+                jobs={data.jobs}
+                loading={backendLoading}
+                onNavigate={go}
+                notify={notify}
+              />
+            )}
+
+            {(activeAccount.role === "Collector" || activeAccount.role?.toLowerCase() === "collector" || activeAccount.role === "Transporter" || activeAccount.role?.toLowerCase() === "transporter") && (
+              <TransporterDashboard
+                activeAccount={activeAccount}
+                lots={data.lots}
+                jobs={data.jobs}
+                records={data.records}
+                loading={backendLoading}
+                onCreateJob={createJob}
+                onConfirmPickup={confirmPickup}
+                onNavigate={go}
+                notify={notify}
+              />
+            )}
           </>
         )}
 
@@ -1247,6 +1286,7 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
                   const location = window.prompt("District / location:", "Sangrur");
                   const newDemand = {
                     id: id("D", data.demands),
+                    buyerId: activeAccount?.id,
                     processor,
                     residue,
                     quantity,
@@ -1353,23 +1393,55 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
               onSwitchAccount(acc);
               notify(`Switched to ${acc.name} (${acc.role})`);
             }}
+            onUpdateUser={acc => {
+              onSwitchAccount(acc);
+            }}
           />
         )}
 
-        {/* User Verification / Admin KYC Page View */}
+        {/* User Verification / Admin KYC Page View (Secured: Admins only) */}
         {page === "User Verification" && (
-          <AdminKycManagement
-            onSwitchUser={acc => {
-              onSwitchAccount(acc);
-              notify(`Switched account to ${acc.name} (${acc.role})`);
-            }}
-            notify={notify}
-          />
+          (activeAccount.role === "Admin" || activeAccount.role?.toLowerCase() === "admin") ? (
+            <AdminKycManagement
+              onSwitchUser={acc => {
+                onSwitchAccount(acc);
+                notify(`Switched account to ${acc.name} (${acc.role})`);
+              }}
+              notify={notify}
+            />
+          ) : (
+            <div className="kl-panel kl-unauthorized-panel" role="alert">
+              <div className="kl-unauthorized-icon">🔒</div>
+              <div className="kl-eyebrow">ACCESS RESTRICTED <span>·</span> 403 FORBIDDEN</div>
+              <h2>State Administrator Authorization Required</h2>
+              <p className="kl-sub">
+                The Ecosystem KYC &amp; Aadhaar Verification Desk is restricted to State Agricultural Officers and Platform Administrators.
+                Your account (<strong>{activeAccount.name}</strong>) is currently authenticated as a <strong>{activeAccount.role}</strong>.
+              </p>
+              <div style={{ marginTop: 24, display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <Button onClick={() => go("Overview")}>
+                  Return to {activeAccount.role} Dashboard →
+                </Button>
+                <Button secondary onClick={() => setShowHelpModal(true)}>
+                  Contact Directorate Helpdesk
+                </Button>
+              </div>
+            </div>
+          )
         )}
 
         {/* Account Settings Page View */}
         {page === "Settings" && (
-          <SettingsPage notify={notify} onBack={goBack} />
+          <SettingsPage
+            notify={notify}
+            onBack={goBack}
+            activeThemeKey={activeThemeKey}
+            themeOverride={themeOverride}
+            onSelectTheme={handleSelectTheme}
+            userRole={activeAccount.role}
+            dark={dark}
+            onToggleDark={setDark}
+          />
         )}
 
         <SiteFooter onLogout={onLogout} onNavigate={go} />
@@ -1387,6 +1459,25 @@ function AppShell({ user, onLogout, onSwitchAccount }) {
             notify(`Switched account to ${acc.name} (${acc.role})`);
           }}
           onClose={() => setAccountModal(false)}
+        />
+      )}
+
+      {/* Role-Tailored Theme Switcher Modal */}
+      {showThemeModal && (
+        <ThemeSwitcherModal
+          currentRole={activeAccount.role}
+          activeThemeKey={activeThemeKey}
+          themeOverride={themeOverride}
+          onSelectTheme={handleSelectTheme}
+          onClose={() => setShowThemeModal(false)}
+        />
+      )}
+
+      {/* Shared Help & Support Modal */}
+      {showHelpModal && (
+        <HelpSupportModal
+          role={activeAccount.role}
+          onClose={() => setShowHelpModal(false)}
         />
       )}
 
@@ -1418,7 +1509,7 @@ function LotCards({ lots, role, onMatch, onPlan, onIntake }) {
               <div className="kl-lot-media-overlay" />
               <div className="kl-lot-media-badges">
                 <span className="kl-lot-live-pill"><span className="kl-pulse-dot" /> LIVE RESIDUE</span>
-                <span className={`kl-status ${l.status.replaceAll(" ", "-")}`}>{l.status}</span>
+                <span className={`kl-status ${(l.status || "Listed").replaceAll(" ", "-")}`}>{l.status || "Listed"}</span>
               </div>
             </div>
             <div className="kl-lot-card-body">
@@ -1489,7 +1580,7 @@ function LotTable({ lots, onPlan, onIntake, role }) {
               <td>{l.est} t</td>
               <td>{l.act == null ? <span className="kl-muted">Pending</span> : `${l.act} t`}</td>
               <td>{l.from}</td>
-              <td><span className={`kl-status ${l.status.replaceAll(" ", "-")}`}>{l.status}</span></td>
+              <td><span className={`kl-status ${(l.status || "Listed").replaceAll(" ", "-")}`}>{l.status || "Listed"}</span></td>
               <td>
                 {["Collector", "Admin"].includes(role) && !["Collected", "Processed"].includes(l.status) && (
                   <button className="kl-row-action" onClick={() => onPlan([l.id])}>Plan pickup</button>
@@ -1541,54 +1632,8 @@ function DemandCards({ demands, onClose, showActions = false }) {
 
 function JobCards({ jobs, lots, role, onPickup }) { return jobs.length ? <div className="kl-job-grid">{jobs.map(j => { const group = lots.filter(l => j.lotIds.includes(l.id)); return <article className="kl-panel kl-job" key={j.id}><header><span className="kl-job-id">{j.id}</span><span className={`kl-status ${j.status}`}>{j.status}</span></header><h3>{j.route}</h3><p>{group.map(l => l.id).join(" · ")} · {group.reduce((n, l) => n + l.est, 0).toFixed(1)} t estimated</p><div className="kl-job-info"><span>Collector<b>{j.collector}</b></span><span>Suggested distance<b>~{j.distance} km</b></span><span>Scheduled<b>{dateLabel(j.schedule)}</b></span></div>{j.status !== "Collected" && ["Collector", "Admin"].includes(role) && <Button onClick={() => onPickup(j)}>Confirm pickup & actual quantity</Button>}{j.status === "Collected" && <p className="kl-success">✓ Pickup confirmed · {j.actualQuantity} t actual total</p>}</article>; })}</div> : null; }
 
-function RecentLots({ lots, onView }) {
-  return (
-    <section className="kl-panel kl-recent">
-      <div className="kl-panel-title">
-        <div>
-          <div className="kl-eyebrow">RECENTLY UPDATED</div>
-          <h2>Residue lots</h2>
-        </div>
-        <button className="kl-link" onClick={onView}>View inventory →</button>
-      </div>
-      <div className="kl-table-scroll">
-        <table className="kl-table">
-          <thead>
-            <tr>
-              <th>LOT</th>
-              <th>FARMER</th>
-              <th>VILLAGE</th>
-              <th>QUANTITY</th>
-              <th>STATUS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lots.map(l => (
-              <tr key={l.id}>
-                <td>
-                  <div className="kl-table-lot-cell">
-                    <img src={l.image || "/images/straw_bales.jpg"} alt="" className="kl-table-thumb" />
-                    <div>
-                      <b>{l.id}</b>
-                      <small>{l.residue}</small>
-                    </div>
-                  </div>
-                </td>
-                <td>{l.farmer}</td>
-                <td>{l.village}</td>
-                <td>{l.est} t</td>
-                <td><span className={`kl-status ${l.status.replaceAll(" ", "-")}`}>{l.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
 function EmptyCard({ title, text, action, onClick }) { return <div className="kl-empty-card"><span>↗</span><b>{title}</b><p>{text}</p>{action && <button className="kl-link" onClick={onClick}>{action} →</button>}</div>; }
-function SiteFooter({ onLogout, onNavigate }) { const navTo = name => onNavigate ? onNavigate(name) : document.getElementById("login-email")?.focus(); return <footer className="kl-footer"><button className="kl-footer-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>↑ &nbsp;Back to top</button><div className="kl-footer-main"><div className="kl-footer-groups"><section><h3>Get to know KrishiLoop</h3><button onClick={() => navTo("Overview")}>About the project</button><button onClick={() => navTo("Impact")}>Our impact approach</button><button onClick={() => navTo("Marketplace")}>Punjab pilot</button><button onClick={() => navTo("Overview")}>How the residue loop works</button></section><section><h3>Join the residue network</h3><button onClick={() => navTo("Marketplace")}>List and discover residue</button><button onClick={() => navTo("Demand board")}>Post processor demand</button><button onClick={() => navTo("Pickup jobs")}>Coordinate collection</button><button onClick={() => navTo("Matching")}>Explore smart matching</button></section><section><h3>For partners</h3><button onClick={() => navTo("Routes")}>Collectors and aggregators</button><button onClick={() => navTo("Intake")}>Processors and buyers</button><button onClick={() => navTo("Demand board")}>Ecosystem organizations</button><button onClick={() => navTo("Impact")}>Pilot activity reports</button></section><section><h3>Let us help you</h3><button onClick={() => navTo("Profile")}>Account and profile</button><button onClick={() => navTo("Settings")}>System settings & API</button><button onClick={() => window.alert("Demo listings and activity are stored in this browser only.")}>Data and privacy</button>{onLogout && <button onClick={onLogout}>Sign out</button>}</section></div><div className="kl-footer-bottom"><a href="#top" className="kl-footer-brand"><Mark>↗</Mark><span><b>KrishiLoop</b><small>Residue to value</small></span></a><span className="kl-footer-region">🌾 &nbsp;Punjab, India <i /> Illustrative pilot prototype</span><span className="kl-footer-copy">© 2026 KrishiLoop · Turning residue into a resource</span></div></div></footer>; }
+function SiteFooter({ onLogout, onNavigate }) { const navTo = name => onNavigate ? onNavigate(name) : document.getElementById("login-email")?.focus(); return <footer className="kl-footer"><button className="kl-footer-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>↑ &nbsp;Back to top</button><div className="kl-footer-main"><div className="kl-footer-groups"><section><h3>Get to know KrishiLoop</h3><button onClick={() => navTo("Overview")}>About the project</button><button onClick={() => navTo("Impact")}>Our impact approach</button><button onClick={() => navTo("Marketplace")}>Punjab pilot</button><button onClick={() => navTo("Overview")}>How the residue loop works</button></section><section><h3>Join the residue network</h3><button onClick={() => navTo("Marketplace")}>List and discover residue</button><button onClick={() => navTo("Demand board")}>Post processor demand</button><button onClick={() => navTo("Pickup jobs")}>Coordinate collection</button><button onClick={() => navTo("Matching")}>Explore smart matching</button></section><section><h3>For partners</h3><button onClick={() => navTo("Routes")}>Collectors and aggregators</button><button onClick={() => navTo("Intake")}>Processors and buyers</button><button onClick={() => navTo("Demand board")}>Ecosystem organizations</button><button onClick={() => navTo("Impact")}>Pilot activity reports</button></section><section><h3>Let us help you</h3><button onClick={() => navTo("Profile")}>Account and profile</button><button onClick={() => navTo("Settings")}>System settings & API</button><button onClick={() => window.alert("Demo listings and activity are stored in this browser only.")}>Data and privacy</button>{onLogout && <button onClick={onLogout}>Sign out</button>}</section></div><div className="kl-footer-bottom"><a href="#top" className="kl-footer-brand"><KrishiLoopAppIcon size={32} /><span><b>KrishiLoop</b><small>Residue to value</small></span></a><span className="kl-footer-region">🌾 &nbsp;Punjab, India <i /> Illustrative pilot prototype</span><span className="kl-footer-copy">© 2026 KrishiLoop · Turning residue into a resource</span></div></div></footer>; }
 
 export default function App() {
   const [rememberMe, setRememberMe] = useState(() => {
@@ -1607,6 +1652,10 @@ export default function App() {
 
       const saved = JSON.parse(localStorage.getItem("krishiloop-session"));
       if (saved) {
+        // Enforce privilege security: non-admins cannot restore as Admin
+        if (saved.role === "Admin" && saved.id !== "acc-admin" && saved.email !== "amanpreet.k@punjab-agri.gov.in" && !saved.isLiveSupabase) {
+          saved.role = "Farmer";
+        }
         const full = findAccountByRoleOrEmail(saved.id || saved.email || saved.role);
         return { ...full, ...saved };
       }
@@ -1616,50 +1665,76 @@ export default function App() {
     }
   });
 
-  // Listen to Supabase Auth state changes if configured
+  // Listen to Supabase Auth state changes and load trusted profile record
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) {
+      // In local/demo mode: ensure non-admins cannot hold Admin role
+      if (session?.role === "Admin" && session?.id !== "acc-admin" && session?.email !== "amanpreet.k@punjab-agri.gov.in") {
+        const sanitized = { ...session, role: "Farmer" };
+        localStorage.setItem("krishiloop-session", JSON.stringify(sanitized));
+        setSession(sanitized);
+      }
+      return;
+    }
 
-    // Check existing Supabase user on startup
-    authService.getUser().then(async ({ user }) => {
-      if (user && !session) {
+    let isMounted = true;
+
+    // Check existing Supabase user on startup & load trusted database profile
+    authService.getUser().then(async (res) => {
+      const user = res?.data?.user;
+      if (user && isMounted) {
         const { data: profile } = await profileService.getProfile(user.id);
-        const resolvedRole = profile?.role || "Farmer";
+        const rawRole = profile?.role || "Farmer";
+        const resolvedRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
         const account = {
           id: user.id,
-          name: profile?.full_name || user.email?.split("@")[0] || "Farmer",
+          name: profile?.full_name || user.email?.split("@")[0] || "User",
           email: user.email,
           phone: profile?.phone || "",
           district: profile?.district || "Sangrur",
-          role: resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1).toLowerCase(),
-          isAadhaarVerified: !!profile?.aadhaar_verified,
+          village: profile?.village || "Dhuri",
+          org: profile?.org || `${profile?.district || "Sangrur"} Agricultural Loop`,
+          role: resolvedRole,
+          badge: `Verified ${resolvedRole}`,
+          isAadhaarVerified: profile?.is_verified ?? true,
+          kycStatus: profile?.kyc_status || "Verified",
           isLiveSupabase: true
         };
+        localStorage.setItem("krishiloop-session", JSON.stringify(account));
         setSession(account);
       }
-    }).catch(() => {});
+    }).catch(err => {
+      console.warn("Could not load trusted profile on init:", err);
+    });
 
     const { data: authListener } = authService.onAuthStateChange(async (event, supaSession) => {
-      if (event === "SIGNED_IN" && supaSession?.user) {
+      if (event === "SIGNED_IN" && supaSession?.user && isMounted) {
         const { data: profile } = await profileService.getProfile(supaSession.user.id);
-        const resolvedRole = profile?.role || "Farmer";
+        const rawRole = profile?.role || "Farmer";
+        const resolvedRole = rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase();
         const account = {
           id: supaSession.user.id,
-          name: profile?.full_name || supaSession.user.email?.split("@")[0] || "Farmer",
+          name: profile?.full_name || supaSession.user.email?.split("@")[0] || "User",
           email: supaSession.user.email,
           phone: profile?.phone || "",
           district: profile?.district || "Sangrur",
-          role: resolvedRole.charAt(0).toUpperCase() + resolvedRole.slice(1).toLowerCase(),
-          isAadhaarVerified: !!profile?.aadhaar_verified,
+          village: profile?.village || "Dhuri",
+          org: profile?.org || `${profile?.district || "Sangrur"} Agricultural Loop`,
+          role: resolvedRole,
+          badge: `Verified ${resolvedRole}`,
+          isAadhaarVerified: profile?.is_verified ?? true,
+          kycStatus: profile?.kyc_status || "Verified",
           isLiveSupabase: true
         };
+        localStorage.setItem("krishiloop-session", JSON.stringify(account));
         setSession(account);
-      } else if (event === "SIGNED_OUT") {
+      } else if (event === "SIGNED_OUT" && isMounted) {
         setSession(null);
       }
     });
 
     return () => {
+      isMounted = false;
       authListener?.subscription?.unsubscribe();
     };
   }, []);
@@ -1682,6 +1757,10 @@ export default function App() {
     } else {
       const full = findAccountByRoleOrEmail(accountOrEmail || role);
       value = { ...full, email: accountOrEmail, role };
+    }
+    // Security check: only predefined admin account can have Admin role in demo mode
+    if (value.role === "Admin" && value.id !== "acc-admin" && value.email !== "amanpreet.k@punjab-agri.gov.in" && !value.isLiveSupabase) {
+      value.role = "Farmer";
     }
     localStorage.setItem("krishiloop-session", JSON.stringify(value));
     setSession(value);

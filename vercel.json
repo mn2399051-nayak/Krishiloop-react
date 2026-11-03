@@ -4,6 +4,6 @@
   "rewrites": [
     { "source": "/krishiloop-dashboard.html", "destination": "/krishiloop-dashboard.html" },
     { "source": "/dashboard.html", "destination": "/dashboard.html" },
-    { "source": "/((?!krishiloop-dashboard|dashboard|assets|.*\\..*).*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

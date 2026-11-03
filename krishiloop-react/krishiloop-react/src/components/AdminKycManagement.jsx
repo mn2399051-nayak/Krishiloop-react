@@ -13,7 +13,6 @@ export default function AdminKycManagement({ onSwitchUser, notify }) {
   const [supabaseAccounts, setSupabaseAccounts] = useState([]);
   const [kycDocs, setKycDocs] = useState([]);
   const [loadingBackend, setLoadingBackend] = useState(false);
-  const [docSignedUrl, setDocSignedUrl] = useState(null);
 
   // Fetch Supabase profiles & KYC documents when configured
   useEffect(() => {
@@ -258,6 +257,14 @@ export default function AdminKycManagement({ onSwitchUser, notify }) {
                       </button>
                       <button
                         type="button"
+                        className="kl-row-action"
+                        onClick={() => handleViewPrivateDoc(acc.id)}
+                        title="View Uploaded Government ID Scan"
+                      >
+                        Doc
+                      </button>
+                      <button
+                        type="button"
                         className="kl-row-action kl-action-switch"
                         onClick={() => onSwitchUser?.(acc)}
                         title="Login as this user"
@@ -362,6 +369,13 @@ export default function AdminKycManagement({ onSwitchUser, notify }) {
               </div>
             </div>
             <div className="kl-modal-actions" style={{ marginTop: 16 }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => handleViewPrivateDoc(selectedUserCert.id)}
+              >
+                📄 View Uploaded Document
+              </button>
               <button
                 type="button"
                 className="secondary"

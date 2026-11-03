@@ -355,11 +355,12 @@ export default function PhoneOtpKycFlow({ onComplete, onCancel, isAdminMode = fa
 
     setShowAadhaarSmsToast(false);
 
-    // Create the verified account locally
+    // Create the verified account locally (enforce that regular registration cannot grant Admin)
+    const safeRole = (!isAdminMode && role === "Admin") ? "Farmer" : role;
     const newAcc = createNewVerifiedAccount({
       phone,
       name: fullName,
-      role,
+      role: safeRole,
       district,
       village,
       idProofType: idType,
@@ -367,36 +368,49 @@ export default function PhoneOtpKycFlow({ onComplete, onCancel, isAdminMode = fa
       documentName,
     });
 
-    // Sync profile to Supabase backend asynchronously if configured
-    profileService.upsertProfile({
-      id: newAcc.id,
-      phone: newAcc.phone,
-      full_name: newAcc.name,
-      first_name: newAcc.firstName,
-      last_name: newAcc.lastName,
-      role: newAcc.role,
-      district: newAcc.district,
-      village: newAcc.village,
-      id_proof_type: newAcc.idProofType,
-      id_proof_number_masked: newAcc.idProofNumber,
-      is_verified: true,
-      kyc_status: "Verified",
-      id_proof_verified_at: new Date().toISOString(),
-    }).catch(err => {
-      console.warn("Supabase profile sync skipped:", err);
-    });
+    // Sync profile to Supabase backend asynchronously if an authenticated UUID session is available
+    const isValidUuid = val => typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val);
+    const syncToSupabaseIfAvailable = async () => {
+      let targetUserId = isValidUuid(newAcc.id) ? newAcc.id : null;
+      if (!targetUserId) {
+        const userRes = await authService.getUser();
+        if (userRes?.data?.user?.id && isValidUuid(userRes.data.user.id)) {
+          targetUserId = userRes.data.user.id;
+        }
+      }
 
-    // If an actual file was selected, upload securely to private bucket 'kyc-documents'
-    if (uploadedFile) {
-      kycService.uploadKycDocument(
-        uploadedFile,
-        newAcc.id,
-        idType,
-        idNumber
-      ).catch(err => {
-        console.warn("Supabase private KYC storage upload:", err);
-      });
-    }
+      if (targetUserId) {
+        try {
+          await profileService.upsertProfile({
+            id: targetUserId,
+            phone: newAcc.phone,
+            full_name: newAcc.name,
+            first_name: newAcc.firstName,
+            last_name: newAcc.lastName,
+            role: newAcc.role,
+            district: newAcc.district,
+            village: newAcc.village,
+            id_proof_type: newAcc.idProofType,
+            id_proof_number_masked: newAcc.idProofNumber,
+            is_verified: true,
+            kyc_status: "Verified",
+            id_proof_verified_at: new Date().toISOString(),
+          });
+
+          if (uploadedFile) {
+            await kycService.uploadKycDocument(
+              uploadedFile,
+              targetUserId,
+              idType,
+              idNumber
+            );
+          }
+        } catch (err) {
+          console.warn("Supabase profile/KYC sync skipped:", err);
+        }
+      }
+    };
+    syncToSupabaseIfAvailable();
 
     setCreatedAccount(newAcc);
     setStep("SUCCESS");
@@ -730,7 +744,7 @@ export default function PhoneOtpKycFlow({ onComplete, onCancel, isAdminMode = fa
                 <option value="Collector">Collector (Baler / Logistics Fleet)</option>
                 <option value="Processor">Processor (Biomass Pellet / Bio-CNG)</option>
                 <option value="Buyer">Buyer (Paper Mills / Commercial Offtaker)</option>
-                <option value="Admin">Admin (State Agricultural Officer)</option>
+                {isAdminMode && <option value="Admin">Admin (State Agricultural Officer)</option>}
               </select>
             </div>
 

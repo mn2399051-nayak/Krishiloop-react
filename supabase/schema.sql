@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT NOT NULL,
   first_name TEXT,
   last_name TEXT,
-  role TEXT NOT NULL DEFAULT 'Farmer' CHECK (role IN ('Farmer', 'Collector', 'Processor', 'Buyer', 'Admin')),
+  role TEXT NOT NULL DEFAULT 'Farmer' CHECK (role IN ('Farmer', 'Collector', 'Processor', 'Buyer', 'Admin', 'Transporter')),
   district TEXT DEFAULT 'Sangrur',
   village TEXT DEFAULT 'Dhuri',
   org TEXT DEFAULT 'Independent Farmer',
@@ -256,12 +256,44 @@ CREATE POLICY "Users can create own profile"
   TO authenticated
   WITH CHECK (auth.uid() = id);
 
--- Users can update only their own profile, Admins can update any
+-- Security trigger: Prevent non-admins from self-granting or updating role to 'Admin'
+CREATE OR REPLACE FUNCTION public.check_profile_role_security()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- If updating role, non-admins cannot change their role
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.role IS DISTINCT FROM OLD.role THEN
+      IF NOT public.is_admin() THEN
+        RAISE EXCEPTION 'Access Denied: Only platform administrators can change user roles.';
+      END IF;
+    END IF;
+  END IF;
+
+  -- If inserting a new profile, non-admins cannot create an Admin account
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.role = 'Admin' AND NOT public.is_admin() THEN
+      NEW.role := 'Farmer'; -- Default to Farmer
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_profile_role_security ON public.profiles;
+CREATE TRIGGER trg_profile_role_security
+BEFORE INSERT OR UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.check_profile_role_security();
+
+-- Users can update only their own profile (cannot change role to Admin), Admins can update any
 CREATE POLICY "Users can update own profile or admin can update"
   ON public.profiles FOR UPDATE
   TO authenticated
   USING (auth.uid() = id OR public.is_admin())
-  WITH CHECK (auth.uid() = id OR public.is_admin());
+  WITH CHECK (
+    (auth.uid() = id AND (role = (SELECT p.role FROM public.profiles p WHERE p.id = auth.uid()) OR public.is_admin()))
+    OR public.is_admin()
+  );
 
 -- 2. FARMS RLS
 ALTER TABLE public.farms ENABLE ROW LEVEL SECURITY;
@@ -301,7 +333,7 @@ CREATE POLICY "Authorized users can update residue lots"
     OR public.is_admin()
     OR EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('Collector', 'Processor', 'Admin')
+      WHERE id = auth.uid() AND role IN ('Collector', 'Processor', 'Admin', 'Transporter')
     )
   )
   WITH CHECK (true);
@@ -369,7 +401,7 @@ CREATE POLICY "Collectors and Admins can create and update collection jobs"
     OR public.is_admin()
     OR EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('Collector', 'Admin')
+      WHERE id = auth.uid() AND role IN ('Collector', 'Admin', 'Transporter')
     )
   )
   WITH CHECK (true);
@@ -467,8 +499,17 @@ DECLARE
   v_name TEXT;
   v_phone TEXT;
 BEGIN
-  v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'Farmer');
-  v_name := COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1));
+  -- Normalize role to Title Case and ensure it matches the CHECK constraint
+  v_role := INITCAP(LOWER(COALESCE(NEW.raw_user_meta_data->>'role', 'Farmer')));
+  IF v_role NOT IN ('Farmer', 'Collector', 'Processor', 'Buyer', 'Admin', 'Transporter') THEN
+    v_role := 'Farmer';
+  END IF;
+
+  -- Prevent privilege escalation on auth signup:
+  IF v_role = 'Admin' THEN
+    v_role := 'Farmer';
+  END IF;
+  v_name := COALESCE(NULLIF(NEW.raw_user_meta_data->>'full_name', ''), NULLIF(NEW.raw_user_meta_data->>'name', ''), split_part(NEW.email, '@', 1));
   v_phone := COALESCE(NEW.raw_user_meta_data->>'phone', NEW.phone, '');
 
   INSERT INTO public.profiles (

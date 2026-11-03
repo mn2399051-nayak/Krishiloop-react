@@ -210,17 +210,21 @@ export function getCustomAccounts() {
 
 export function saveCustomAccount(acc) {
   try {
+    // Security: Only predefined system administrator (acc-admin) can have role "Admin"
+    const safeAccount = (acc.role === "Admin" && acc.id !== "acc-admin" && acc.email !== "amanpreet.k@punjab-agri.gov.in")
+      ? { ...acc, role: "Farmer" }
+      : acc;
     const list = getCustomAccounts();
-    const idx = list.findIndex(a => a.id === acc.id || (acc.phone && cleanPhone(a.phone) === cleanPhone(acc.phone)));
+    const idx = list.findIndex(a => a.id === safeAccount.id || (safeAccount.phone && cleanPhone(a.phone) === cleanPhone(safeAccount.phone)));
     let updated;
     if (idx >= 0) {
       updated = [...list];
-      updated[idx] = { ...updated[idx], ...acc };
+      updated[idx] = { ...updated[idx], ...safeAccount };
     } else {
-      updated = [acc, ...list];
+      updated = [safeAccount, ...list];
     }
     localStorage.setItem(CUSTOM_ACCOUNTS_KEY, JSON.stringify(updated));
-    return acc;
+    return safeAccount;
   } catch {
     return acc;
   }
@@ -267,6 +271,11 @@ export function createNewVerifiedAccount({
   idProofNumber = "",
   documentName = "aadhaar_card_doc.pdf",
 }) {
+  // Security: Do not allow self-granting Admin privilege
+  const allowedRoles = ["Farmer", "Collector", "Processor", "Buyer", "Transporter"];
+  const sanitizedRole = (role === "Admin" || !allowedRoles.includes(role)) ? "Farmer" : role;
+  const actualRole = sanitizedRole === "Transporter" ? "Collector" : sanitizedRole;
+
   const clean = cleanPhone(phone);
   const formattedPhone = clean.length === 10 ? `+91 ${clean.slice(0, 5)} ${clean.slice(5)}` : phone;
   const parts = (name || "New User").trim().split(" ");
@@ -282,7 +291,7 @@ export function createNewVerifiedAccount({
     Admin: { bg: "#20593d", color: "#ffffff" },
   };
 
-  const colors = roleColors[role] || { bg: "#059669", color: "#ffffff" };
+  const colors = roleColors[actualRole] || { bg: "#059669", color: "#ffffff" };
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const maskedId = idProofNumber
     ? (idProofNumber.length >= 4 ? `XXXX-XXXX-${idProofNumber.replace(/\D/g, "").slice(-4)}` : idProofNumber)
@@ -298,18 +307,18 @@ export function createNewVerifiedAccount({
     firstName,
     lastName,
     email: `${firstName.toLowerCase()}.${clean.slice(-4)}@user.krishiloop.in`,
-    role,
-    badge: `Verified ${role}`,
+    role: sanitizedRole,
+    badge: `Verified ${sanitizedRole}`,
     avatarBg: colors.bg,
     avatarColor: colors.color,
     initials,
     phone: formattedPhone,
     district,
     village,
-    org: role === "Farmer" ? `${village} Farmers Group` : `${district} Agricultural Loop`,
-    bio: `${role} onboarded via verified Phone OTP and Aadhaar e-KYC in ${district} district. Zero-burn certified.`,
+    org: sanitizedRole === "Farmer" ? `${village} Farmers Group` : `${district} Agricultural Loop`,
+    bio: `${sanitizedRole} onboarded via verified Phone OTP and Aadhaar e-KYC in ${district} district. Zero-burn certified.`,
     memberSince: `${now.toLocaleString("en-IN", { month: "short" })} ${now.getFullYear()}`,
-    employeeId: `KL-${role.slice(0, 3).toUpperCase()}-${randomSuffix}`,
+    employeeId: `KL-${sanitizedRole.slice(0, 3).toUpperCase()}-${randomSuffix}`,
     isVerified: true,
     kycStatus: "Verified",
     idProofType,
@@ -338,7 +347,7 @@ export function createNewVerifiedAccount({
       {
         type: "green",
         icon: "✓",
-        text: `Regular website access granted for <b>${role}</b> workspace`,
+        text: `Regular website access granted for <b>${sanitizedRole}</b> workspace`,
         time: `Today, ${timeFormatted}`,
       },
     ],
